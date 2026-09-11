@@ -1,0 +1,180 @@
+[{
+  "_id": "rev-comedor-1",
+  "__v": 0,
+  "approved": true,
+  "businessId": "comedor-mili-san-raymundo",
+  "comment": "El pepián es delicioso y el trato es muy amable. Excelente precio.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.735Z"
+  },
+  "rating": 5,
+  "updatedAt": {
+    "$date": "2026-09-07T23:55:45.735Z"
+  },
+  "userName": "Rosa M."
+},
+{
+  "_id": "rev-comedor-2",
+  "__v": 0,
+  "approved": true,
+  "businessId": "comedor-mili-san-raymundo",
+  "comment": "Buena comida casera, porciones generosas.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.738Z"
+  },
+  "rating": 4,
+  "updatedAt": {
+    "$date": "2026-09-07T23:55:45.738Z"
+  },
+  "userName": "Carlos G."
+},
+{
+  "_id": "rev-comedor-3",
+  "__v": 0,
+  "approved": true,
+  "businessId": "comedor-mili-san-raymundo",
+  "comment": "Los caldos los mejores de San Raymundo.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.740Z"
+  },
+  "rating": 5,
+  "updatedAt": {
+    "$date": "2026-09-07T23:55:57.543Z"
+  },
+  "userName": "Lucía P."
+},
+{
+  "_id": "rev-ceiba-1",
+  "__v": 0,
+  "approved": true,
+  "businessId": "restaurante-la-ceiba",
+  "comment": "Los chuchitos están para chuparse los dedos.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.743Z"
+  },
+  "rating": 5,
+  "updatedAt": {
+    "$date": "2026-09-07T23:55:45.743Z"
+  },
+  "userName": "María F."
+},
+{
+  "_id": "rev-ceiba-2",
+  "__v": 0,
+  "approved": true,
+  "businessId": "restaurante-la-ceiba",
+  "comment": "Ambiente agradable y música en vivo los sábados.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.745Z"
+  },
+  "rating": 4,
+  "updatedAt": {
+    "$date": "2026-09-07T23:55:45.745Z"
+  },
+  "userName": "Diego R."
+},
+{
+  "_id": "rev-techfix-1",
+  "__v": 0,
+  "approved": true,
+  "businessId": "techfix-ciudad-quetzal",
+  "comment": "Me cambiaron la pantalla el mismo día, con garantía.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.746Z"
+  },
+  "rating": 5,
+  "updatedAt": {
+    "$date": "2026-09-07T23:55:45.746Z"
+  },
+  "userName": "Jorge A."
+},
+{
+  "_id": "rev-cafe-1",
+  "__v": 0,
+  "approved": true,
+  "businessId": "cafe-la-estacion-sjs",
+  "comment": "El café de la región está espectacular.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.749Z"
+  },
+  "rating": 5,
+  "updatedAt": {
+    "$date": "2026-09-07T23:55:45.749Z"
+  },
+  "userName": "Pedro L."
+},
+{
+  "_id": "rev-cafe-2",
+  "__v": 0,
+  "approved": true,
+  "businessId": "cafe-la-estacion-sjs",
+  "comment": "Mi lugar favorito para desayunar los domingos.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.750Z"
+  },
+  "rating": 5,
+  "updatedAt": {
+    "$date": "2026-09-08T00:07:33.453Z"
+  },
+  "userName": "Ana V."
+},
+{
+  "_id": "rev-consulta-1",
+  "__v": 0,
+  "approved": true,
+  "businessId": "consultorio-medico-vida",
+  "comment": "La doctora es muy atenta y las citas son puntuales.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.751Z"
+  },
+  "rating": 5,
+  "updatedAt": {
+    "$date": "2026-09-07T23:55:45.751Z"
+  },
+  "userName": "Sofía B."
+},
+{
+  "_id": "rev-consulta-2",
+  "__v": 0,
+  "approved": true,
+  "businessId": "consultorio-medico-vida",
+  "comment": "Muy buen trato y precios justos.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.753Z"
+  },
+  "rating": 4,
+  "updatedAt": {
+    "$date": "2026-09-07T23:55:45.753Z"
+  },
+  "userName": "Fernando T."
+},
+{
+  "_id": "rev-lavanderia-1",
+  "__v": 0,
+  "approved": true,
+  "businessId": "lavanderia-burbuja-ctq",
+  "comment": "Ropa limpia y bien doblada, entregan a domicilio.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.754Z"
+  },
+  "rating": 5,
+  "updatedAt": {
+    "$date": "2026-09-08T00:07:31.864Z"
+  },
+  "userName": "Karla D."
+},
+{
+  "_id": "rev-faisan-1",
+  "__v": 0,
+  "approved": true,
+  "businessId": "restaurante-el-faisan",
+  "comment": "El kak'ik es de otro nivel. Recomendado.",
+  "createdAt": {
+    "$date": "2026-09-07T23:55:45.756Z"
+  },
+  "rating": 5,
+  "updatedAt": {
+    "$date": "2026-09-07T23:55:45.756Z"
+  },
+  "userName": "Miguel C."
+}]

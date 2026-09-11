@@ -1,0 +1,96 @@
+[{
+  "_id": "restaurantes",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.790Z"
+  },
+  "icon": "comida",
+  "name": "Restaurantes",
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.790Z"
+  }
+},
+{
+  "_id": "salud",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.872Z"
+  },
+  "icon": "salud",
+  "name": "Salud",
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.872Z"
+  }
+},
+{
+  "_id": "talleres",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.876Z"
+  },
+  "icon": "talleres",
+  "name": "Talleres",
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.876Z"
+  }
+},
+{
+  "_id": "profesionales",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.879Z"
+  },
+  "icon": "profesionales",
+  "name": "Profesionales",
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.879Z"
+  }
+},
+{
+  "_id": "comercios",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.881Z"
+  },
+  "icon": "comercios",
+  "name": "Comercios",
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.881Z"
+  }
+},
+{
+  "_id": "belleza",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.884Z"
+  },
+  "icon": "belleza",
+  "name": "Belleza",
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.884Z"
+  }
+},
+{
+  "_id": "tecnologia",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.887Z"
+  },
+  "icon": "tecnologia",
+  "name": "Tecnología",
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.887Z"
+  }
+},
+{
+  "_id": "servicios",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.891Z"
+  },
+  "icon": "servicios",
+  "name": "Servicios",
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.891Z"
+  }
+}]

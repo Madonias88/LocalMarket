@@ -1,0 +1,593 @@
+[{
+  "_id": "comedor-mili-san-raymundo",
+  "__v": 0,
+  "address": "4a. Calle 3-12, Barrio El Centro, San Raymundo",
+  "categoryId": "restaurantes",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.894Z"
+  },
+  "description": "Desayunos y almuerzos caseros: pepián, hilachas, carnitas y caldos. Comida del día a precio popular.",
+  "featured": true,
+  "hours": {
+    "Lunes a Viernes": "06:30 - 15:00",
+    "Sábado": "06:30 - 14:00",
+    "Domingo": "Cerrado"
+  },
+  "latitude": 14.7645,
+  "longitude": -90.5945,
+  "name": "Comedor Doña Mili",
+  "phone": "50255240111",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-comedor1/600/400",
+    "https://picsum.photos/seed/gt-comedor2/600/400"
+  ],
+  "priceRange": "$",
+  "rating": 4.5,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.894Z"
+  },
+  "verified": true,
+  "whatsapp": "50255240111"
+},
+{
+  "_id": "farmacia-san-raymundo",
+  "__v": 0,
+  "address": "1a. Avenida 6-18, frente al parque, San Raymundo",
+  "categoryId": "salud",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.902Z"
+  },
+  "description": "Medicamentos, vitaminas y productos de higiene. Entrega a domicilio dentro del casco urbano.",
+  "featured": true,
+  "hours": {
+    "Lunes a Domingo": "07:00 - 21:00"
+  },
+  "latitude": 14.7652,
+  "longitude": -90.5958,
+  "name": "Farmacia San Raymundo",
+  "phone": "50255270112",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-farm1/600/400"
+  ],
+  "priceRange": "$$",
+  "rating": 4.3,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.902Z"
+  },
+  "verified": true,
+  "whatsapp": "50255270112"
+},
+{
+  "_id": "ferreteria-el-constructor",
+  "__v": 0,
+  "address": "Carretera a El Chol km 24, San Raymundo",
+  "categoryId": "comercios",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.905Z"
+  },
+  "description": "Materiales de construcción, herramientas, pintura y plomería. Presupuestos y entregas en obra.",
+  "featured": false,
+  "hours": {
+    "Lunes a Viernes": "07:30 - 18:00",
+    "Sábado": "07:30 - 15:00",
+    "Domingo": "Cerrado"
+  },
+  "latitude": 14.7633,
+  "longitude": -90.5937,
+  "name": "Ferretería El Constructor",
+  "phone": "50255120113",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-ferre1/600/400"
+  ],
+  "priceRange": "$$$",
+  "rating": 4.1,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.905Z"
+  },
+  "verified": false,
+  "whatsapp": "50255120113"
+},
+{
+  "_id": "taller-don-tono-sr",
+  "__v": 0,
+  "address": "2a. Calle 5-20, Colonia El Rosario, San Raymundo",
+  "categoryId": "talleres",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.909Z"
+  },
+  "description": "Reparación de motor, frenos y suspensión. Cambio de aceite y diagnóstico con escáner.",
+  "featured": false,
+  "hours": {
+    "Lunes a Viernes": "08:00 - 18:00",
+    "Sábado": "08:00 - 13:00",
+    "Domingo": "Cerrado"
+  },
+  "latitude": 14.766,
+  "longitude": -90.5963,
+  "name": "Taller Mecánico Don Toño",
+  "phone": "50255310114",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-taller1/600/400"
+  ],
+  "priceRange": "$$",
+  "rating": 4.2,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.909Z"
+  },
+  "verified": false,
+  "whatsapp": "50255310114"
+},
+{
+  "_id": "barberia-el-raymundo",
+  "__v": 0,
+  "address": "3a. Calle 2-08, Barrio El Centro, San Raymundo",
+  "categoryId": "belleza",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.911Z"
+  },
+  "description": "Cortes clásicos y modernos, arreglo de barba y tintes. Estilo sin cita previa.",
+  "featured": false,
+  "hours": {
+    "Lunes a Sábado": "09:00 - 19:00",
+    "Domingo": "09:00 - 14:00"
+  },
+  "latitude": 14.7642,
+  "longitude": -90.5952,
+  "name": "Barbería El Raymundo",
+  "phone": "50255780115",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-barber1/600/400"
+  ],
+  "priceRange": "$",
+  "rating": 4.4,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.911Z"
+  },
+  "verified": false,
+  "whatsapp": "50255780115"
+},
+{
+  "_id": "cafe-la-estacion-sjs",
+  "__v": 0,
+  "address": "4a. Calle 3-50, Zona 1, San Juan Sacatepéquez",
+  "categoryId": "restaurantes",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.914Z"
+  },
+  "description": "Café de la región, repostería casera y desayunos. Hermoso ambiente junto al parque central.",
+  "featured": true,
+  "hours": {
+    "Lunes a Viernes": "07:00 - 20:00",
+    "Sábado y Domingo": "08:00 - 21:00"
+  },
+  "latitude": 14.7186,
+  "longitude": -90.6438,
+  "name": "Cafetería La Estación",
+  "phone": "50255450116",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-cafe1/600/400",
+    "https://picsum.photos/seed/gt-cafe2/600/400"
+  ],
+  "priceRange": "$$",
+  "rating": 4.6,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.914Z"
+  },
+  "verified": true,
+  "whatsapp": "50255450116"
+},
+{
+  "_id": "farmacia-san-juan",
+  "__v": 0,
+  "address": "6a. Avenida 5-12, Zona 1, San Juan Sacatepéquez",
+  "categoryId": "salud",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.916Z"
+  },
+  "description": "Medicamentos genéricos y de patente, servicio de presión y glucosa gratuita.",
+  "featured": false,
+  "hours": {
+    "Lunes a Domingo": "07:00 - 20:30"
+  },
+  "latitude": 14.7194,
+  "longitude": -90.6449,
+  "name": "Farmacia San Juan",
+  "phone": "50255820117",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-farm2/600/400"
+  ],
+  "priceRange": "$$",
+  "rating": 4.2,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.916Z"
+  },
+  "verified": true,
+  "whatsapp": "50255820117"
+},
+{
+  "_id": "panaderia-dona-julia",
+  "__v": 0,
+  "address": "2a. Calle 4-08, Barrio La Libertad, San Juan Sacatepéquez",
+  "categoryId": "comercios",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.918Z"
+  },
+  "description": "Pan artesanal, galletas, tradicionales y pasteles por encargo. Pan caliente cada mañana.",
+  "featured": false,
+  "hours": {
+    "Lunes a Sábado": "06:00 - 18:00",
+    "Domingo": "06:00 - 13:00"
+  },
+  "latitude": 14.718,
+  "longitude": -90.6445,
+  "name": "Panadería Doña Julia",
+  "phone": "50255900118",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-pan1/600/400"
+  ],
+  "priceRange": "$",
+  "rating": 4.5,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.918Z"
+  },
+  "verified": false,
+  "whatsapp": "50255900118"
+},
+{
+  "_id": "envios-san-juan",
+  "__v": 0,
+  "address": "8a. Avenida 4-33, zona de mercado, San Juan Sacatepéquez",
+  "categoryId": "servicios",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.920Z"
+  },
+  "description": "Paquetería nacional, giros y encomiendas. Recolección en tu casa con aviso por WhatsApp.",
+  "featured": false,
+  "hours": {
+    "Lunes a Viernes": "08:00 - 18:00",
+    "Sábado": "08:00 - 14:00",
+    "Domingo": "Cerrado"
+  },
+  "latitude": 14.7192,
+  "longitude": -90.6431,
+  "name": "Envíos y Paquetería San Juan",
+  "phone": "50255290119",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-envio1/600/400"
+  ],
+  "priceRange": "$$",
+  "rating": 4,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.920Z"
+  },
+  "verified": false,
+  "whatsapp": "50255290119"
+},
+{
+  "_id": "estetica-flor-de-liz",
+  "__v": 0,
+  "address": "1a. Calle 6-21, Zona 1, San Juan Sacatepéquez",
+  "categoryId": "belleza",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.922Z"
+  },
+  "description": "Cortes, manicure, pedicure, cejas y tratamientos faciales. Precios accesibles.",
+  "featured": false,
+  "hours": {
+    "Lunes a Sábado": "09:00 - 19:00",
+    "Domingo": "Cerrado"
+  },
+  "latitude": 14.7176,
+  "longitude": -90.6449,
+  "name": "Estética Flor de Liz",
+  "phone": "50255610120",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-estet1/600/400"
+  ],
+  "priceRange": "$",
+  "rating": 4.3,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.922Z"
+  },
+  "verified": false,
+  "whatsapp": "50255610120"
+},
+{
+  "_id": "restaurante-la-ceiba",
+  "__v": 0,
+  "address": "5a. Calle 2-15, Ciudad Quetzal",
+  "categoryId": "restaurantes",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.925Z"
+  },
+  "description": "Comida guatemalteca y antojitos: chuchitos, tamales, rellenitos y platos típicos. Música en vivo los sábados.",
+  "featured": true,
+  "hours": {
+    "Lunes a Jueves": "11:00 - 21:00",
+    "Viernes y Sábado": "11:00 - 23:00",
+    "Domingo": "11:00 - 20:00"
+  },
+  "latitude": 14.699,
+  "longitude": -90.5785,
+  "name": "Restaurante La Ceiba",
+  "phone": "50255720121",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-ceiba1/600/400",
+    "https://picsum.photos/seed/gt-ceiba2/600/400"
+  ],
+  "priceRange": "$$",
+  "rating": 4.7,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.925Z"
+  },
+  "verified": true,
+  "whatsapp": "50255720121"
+},
+{
+  "_id": "consultorio-medico-vida",
+  "__v": 0,
+  "address": "Avenida Principal 3-08, Ciudad Quetzal",
+  "categoryId": "salud",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.927Z"
+  },
+  "description": "Consulta general, control de niño sano y enfermedades crónicas. Citas por WhatsApp y expediente digital.",
+  "featured": false,
+  "hours": {
+    "Lunes a Viernes": "08:00 - 17:00",
+    "Sábado": "08:00 - 12:00",
+    "Domingo": "Cerrado"
+  },
+  "latitude": 14.6998,
+  "longitude": -90.5796,
+  "name": "Consultorio Médico Vida",
+  "phone": "50255380122",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-med1/600/400"
+  ],
+  "priceRange": "$$$",
+  "rating": 4.8,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.927Z"
+  },
+  "verified": true,
+  "whatsapp": "50255380122"
+},
+{
+  "_id": "ferreteria-el-vecino",
+  "__v": 0,
+  "address": "3a. Calle 1-22, Colonia San Juan, Ciudad Quetzal",
+  "categoryId": "comercios",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.929Z"
+  },
+  "description": "Venta de abarrotes, ferretería y productos de limpieza. Crédito de fiado para vecinos de confianza.",
+  "featured": false,
+  "hours": {
+    "Lunes a Domingo": "06:30 - 21:00"
+  },
+  "latitude": 14.6987,
+  "longitude": -90.5777,
+  "name": "Ferretería y Abarrotes El Vecino",
+  "phone": "50255890123",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-abarro1/600/400"
+  ],
+  "priceRange": "$",
+  "rating": 4.1,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.929Z"
+  },
+  "verified": false,
+  "whatsapp": "50255890123"
+},
+{
+  "_id": "lavanderia-burbuja-ctq",
+  "__v": 0,
+  "address": "2a. Calle 4-10, Zona de servicios, Ciudad Quetzal",
+  "categoryId": "servicios",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.930Z"
+  },
+  "description": "Lavado y secado por kilo, planchado y tintorería. Recogida y entrega a domicilio en Ciudad Quetzal.",
+  "featured": false,
+  "hours": {
+    "Lunes a Sábado": "07:30 - 19:00",
+    "Domingo": "08:00 - 14:00"
+  },
+  "latitude": 14.7,
+  "longitude": -90.579,
+  "name": "Lavandería Burbuja",
+  "phone": "50255530124",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-lav1/600/400"
+  ],
+  "priceRange": "$",
+  "rating": 4.2,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.930Z"
+  },
+  "verified": false,
+  "whatsapp": "50255530124"
+},
+{
+  "_id": "techfix-ciudad-quetzal",
+  "__v": 0,
+  "address": "Avenida Central 2-30, Ciudad Quetzal",
+  "categoryId": "tecnologia",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.932Z"
+  },
+  "description": "Cambio de pantallas, baterías y reparación de software. Diagnóstico gratis y garantía escrita.",
+  "featured": true,
+  "hours": {
+    "Lunes a Viernes": "09:00 - 19:00",
+    "Sábado": "09:00 - 17:00",
+    "Domingo": "Cerrado"
+  },
+  "latitude": 14.6994,
+  "longitude": -90.5801,
+  "name": "TechFix Reparación de Celulares",
+  "phone": "50255170125",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-tech1/600/400"
+  ],
+  "priceRange": "$$",
+  "rating": 4.4,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.932Z"
+  },
+  "verified": false,
+  "whatsapp": "50255170125"
+},
+{
+  "_id": "despacho-juridico-torres",
+  "__v": 0,
+  "address": "6a. Avenida 10-15, Zona 1, Edificio Torre Azul, Ciudad de Guatemala",
+  "categoryId": "profesionales",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.934Z"
+  },
+  "description": "Asesoría legal en derecho penal, civil, laboral y de familia. Primera consulta informativa gratuita.",
+  "featured": false,
+  "hours": {
+    "Lunes a Viernes": "09:00 - 18:00",
+    "Sábado": "Cita previa",
+    "Domingo": "Cerrado"
+  },
+  "latitude": 14.6426,
+  "longitude": -90.5133,
+  "name": "Despacho Jurídico Torres y Asociados",
+  "phone": "50255660126",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-despacho1/600/400"
+  ],
+  "priceRange": "$$$",
+  "rating": 4.7,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.934Z"
+  },
+  "verified": true,
+  "whatsapp": "50255660126"
+},
+{
+  "_id": "restaurante-el-faisan",
+  "__v": 0,
+  "address": "13 Calle 3-40, Zona 10, Ciudad de Guatemala",
+  "categoryId": "restaurantes",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.935Z"
+  },
+  "description": "Platos típicos de alta cocina guatemalteca: kak'ik, jocón, subanik y arroz negro. Ambiente familiar.",
+  "featured": true,
+  "hours": {
+    "Lunes a Jueves": "12:00 - 22:00",
+    "Viernes y Sábado": "12:00 - 23:00",
+    "Domingo": "12:00 - 21:00"
+  },
+  "latitude": 14.602,
+  "longitude": -90.5185,
+  "name": "Restaurante El Faisán",
+  "phone": "50255220127",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-faisan1/600/400",
+    "https://picsum.photos/seed/gt-faisan2/600/400"
+  ],
+  "priceRange": "$$$",
+  "rating": 4.8,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.935Z"
+  },
+  "verified": true,
+  "whatsapp": "50255220127"
+},
+{
+  "_id": "gimnasio-iron-sport",
+  "__v": 0,
+  "address": "Vía 4 4-55, Zona 4, Ciudad de Guatemala",
+  "categoryId": "servicios",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.937Z"
+  },
+  "description": "Sala de pesas, cardio, clases grupales y nutrición. Plan mensual sin permanencia.",
+  "featured": false,
+  "hours": {
+    "Lunes a Viernes": "05:00 - 22:00",
+    "Sábado": "06:00 - 20:00",
+    "Domingo": "07:00 - 12:00"
+  },
+  "latitude": 14.617,
+  "longitude": -90.528,
+  "name": "Gimnasio Iron Sport",
+  "phone": "50255490128",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-gym1/600/400"
+  ],
+  "priceRange": "$$$",
+  "rating": 4.3,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.937Z"
+  },
+  "verified": false,
+  "whatsapp": "50255490128"
+},
+{
+  "_id": "libreria-el-pensativo",
+  "__v": 0,
+  "address": "9a. Calle 6-36, Zona 1, Ciudad de Guatemala",
+  "categoryId": "comercios",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.938Z"
+  },
+  "description": "Libros guatemaltecos, historia, literatura y papelería fina. Rincón de lectura y pedidos especiales.",
+  "featured": false,
+  "hours": {
+    "Lunes a Viernes": "09:00 - 19:00",
+    "Sábado": "09:00 - 17:00",
+    "Domingo": "Cerrado"
+  },
+  "latitude": 14.641,
+  "longitude": -90.5145,
+  "name": "Librería El Pensativo",
+  "phone": "50255800129",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-libreria1/600/400"
+  ],
+  "priceRange": "$$",
+  "rating": 4.6,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.938Z"
+  },
+  "verified": false,
+  "whatsapp": "50255800129"
+},
+{
+  "_id": "clinica-dental-sonrisa",
+  "__v": 0,
+  "address": "12 Calle 2-16, Zona 10, Ciudad de Guatemala",
+  "categoryId": "salud",
+  "createdAt": {
+    "$date": "2026-09-07T22:28:16.940Z"
+  },
+  "description": "Limpieza, blanqueamiento, ortodoncia y empastes. Equipo moderno y planes financiados.",
+  "featured": false,
+  "hours": {
+    "Lunes a Viernes": "08:00 - 18:00",
+    "Sábado": "08:00 - 14:00",
+    "Domingo": "Cerrado"
+  },
+  "latitude": 14.5995,
+  "longitude": -90.516,
+  "name": "Clínica Dental Sonrisa",
+  "phone": "50255150130",
+  "photoUrls": [
+    "https://picsum.photos/seed/gt-dental1/600/400"
+  ],
+  "priceRange": "$$$",
+  "rating": 4.7,
+  "updatedAt": {
+    "$date": "2026-09-07T22:28:16.940Z"
+  },
+  "verified": true,
+  "whatsapp": "50255150130"
+}]
