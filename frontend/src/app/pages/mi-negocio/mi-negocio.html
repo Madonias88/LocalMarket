@@ -1,0 +1,428 @@
+<div class="wrap">
+  @if (!auth.authed()) {
+    <form class="login-form" (ngSubmit)="login()">
+      <div class="login-head">
+        <span class="monogram">M</span>
+        <h1>Mi negocio</h1>
+        <p>Gestiona los datos, horarios, fotos y promociones de tu negocio.</p>
+      </div>
+      <label class="field">
+        Usuario
+        <input
+          type="text"
+          autocomplete="username"
+          placeholder="usuario"
+          [value]="username()"
+          (input)="username.set($any($event.target).value)"
+        />
+      </label>
+      <label class="field">
+        Contraseña
+        <span class="pwd-wrap">
+          <input
+            [type]="showPassword() ? 'text' : 'password'"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            [value]="password()"
+            (input)="password.set($any($event.target).value)"
+          />
+          <button
+            type="button"
+            class="pwd-toggle"
+            (click)="showPassword.set(!showPassword())"
+          >
+            {{ showPassword() ? 'Ocultar' : 'Ver' }}
+          </button>
+        </span>
+      </label>
+      @if (error()) {
+        <p class="err">{{ error() }}</p>
+      }
+      <button type="submit" class="submit">Entrar</button>
+      <details class="demo">
+        <summary>Cuentas de demostración</summary>
+        <p>
+          Hay una cuenta por negocio: el <strong>usuario</strong> es el nombre corto del
+          negocio (ej. <code>comedor-mili-san-raymundo</code>) y la
+          <strong>contraseña</strong> es <code>owner123</code>.
+        </p>
+      </details>
+    </form>
+  } @else if (user()?.role !== 'owner' || !user()?.businessId) {
+    <div class="card notice">
+      <h1>Mi negocio</h1>
+      <p>Este espacio es para los dueños de negocios.</p>
+      <a routerLink="/admin">Ir al panel de administración →</a>
+    </div>
+  } @else if (loading()) {
+    <p class="muted">Cargando tu negocio...</p>
+  } @else if (business(); as b) {
+    <div class="page-head">
+      <div>
+        <h1>{{ b.name }}</h1>
+        <p class="sub">Espacio de gestión · los cambios se publican al guardar</p>
+      </div>
+      <nav>
+        <a class="btn outline" routerLink="/">Ver directorio</a>
+        <a class="btn outline" [routerLink]="previewUrl()">Ver mi ficha</a>
+      </nav>
+    </div>
+
+    <div class="tabs">
+      @for (t of ['datos', 'horarios', 'fotos', 'promo', 'extras']; track t) {
+        <button [class.active]="activeTab() === t" (click)="selectTab(t)">
+          {{ tabLabel(t) }}
+        </button>
+      }
+    </div>
+
+    <form class="card form" (ngSubmit)="save()">
+      @if (activeTab() === 'datos') {
+        <label>
+          Nombre del negocio *
+          <input
+            type="text"
+            [value]="form().name"
+            (input)="set('name', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          Descripción
+          <textarea
+            rows="3"
+            placeholder="¿Qué ofrece tu negocio?"
+            [value]="form().description"
+            (input)="set('description', $any($event.target).value)"
+          ></textarea>
+        </label>
+        <label>
+          Dirección
+          <input
+            type="text"
+            [value]="form().address"
+            (input)="set('address', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          Zona / municipio
+          <input
+            type="text"
+            placeholder="Ej. San Raymundo"
+            [value]="form().zone"
+            (input)="set('zone', $any($event.target).value)"
+          />
+        </label>
+        <div class="two">
+          <label>
+            Teléfono
+            <input
+              type="tel"
+              [value]="form().phone"
+              (input)="set('phone', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            WhatsApp
+            <input
+              type="tel"
+              [value]="form().whatsapp"
+              (input)="set('whatsapp', $any($event.target).value)"
+            />
+          </label>
+        </div>
+        <div class="two">
+          <label>
+            Rango de precio
+            <select [value]="form().priceRange" (change)="set('priceRange', $any($event.target).value)">
+              <option>$</option>
+              <option>$$</option>
+              <option>$$$</option>
+            </select>
+          </label>
+          <div class="two">
+            <label>
+              Latitud
+              <input
+                type="number"
+                step="any"
+                placeholder="14.7646"
+                [value]="form().latitude"
+                (input)="set('latitude', parseNumber($any($event.target).value))"
+              />
+            </label>
+            <label>
+              Longitud
+              <input
+                type="number"
+                step="any"
+                placeholder="-90.5949"
+                [value]="form().longitude"
+                (input)="set('longitude', parseNumber($any($event.target).value))"
+              />
+            </label>
+          </div>
+        </div>
+      }
+
+      @if (activeTab() === 'horarios') {
+        <label for="hours">
+          Horarios (una línea por día o rango)
+          <textarea
+            id="hours"
+            rows="8"
+            placeholder="Lunes a Viernes: 07:00 - 18:00&#10;Sábado: 08:00 - 13:00&#10;Domingo: Cerrado"
+            [value]="form().hoursText"
+            (input)="set('hoursText', $any($event.target).value)"
+          ></textarea>
+        </label>
+        <p class="hint">
+          Usa <strong>Día: horario</strong>. El estado "Abierto ahora" se calcula
+          automáticamente con tu hora local. Admite rangos como
+          <em>Lunes a Viernes</em>, múltiples días (<em>Viernes y Sábado</em>) y
+          <em>Cerrado</em> o <em>Cita previa</em>.
+        </p>
+      }
+
+      @if (activeTab() === 'fotos') {
+        <div class="photos-block">
+          <h2 class="promo-title">Fotos de tu negocio</h2>
+
+          @if (photos().length) {
+            <div class="photo-grid">
+              @for (p of photos(); track p) {
+                <div class="photo-item">
+                  <img [src]="p" alt="Foto de {{ form().name }}" loading="lazy" />
+                  <button
+                    type="button"
+                    class="photo-remove"
+                    (click)="removePhoto(p)"
+                    aria-label="Eliminar foto"
+                  >×</button>
+                  @if ($first) {
+                    <span class="cover">Portada</span>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="muted">Todavía no tienes fotos. Sube las primeras para que tu ficha luzca mejor.</p>
+          }
+
+          <label class="upload-btn" [class.disabled]="uploading()">
+            {{ uploading() ? 'Subiendo...' : 'Subir fotos' }}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              [disabled]="uploading()"
+              (change)="onFilesSelected($event)"
+            />
+          </label>
+          <p class="hint">
+            JPG, PNG o WebP · hasta 10&nbsp;MB cada una · hasta 5 por carga (10 fotos
+            en total). La primera se usa como portada en el directorio.
+          </p>
+        </div>
+      }
+
+      @if (activeTab() === 'promo') {
+        <h2 class="promo-title">Oferta o promoción vigente</h2>
+        <label>
+          Texto de la oferta
+          <input
+            type="text"
+            placeholder="Ej. 2x1 en chuchitos los sábados"
+            [value]="form().promoText"
+            (input)="set('promoText', $any($event.target).value)"
+          />
+        </label>
+        <div class="two">
+          <label>
+            Inicio (opcional)
+            <input
+              type="date"
+              [value]="form().promoStart"
+              (change)="set('promoStart', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            Fin (opcional)
+            <input
+              type="date"
+              [value]="form().promoEnd"
+              (change)="set('promoEnd', $any($event.target).value)"
+            />
+          </label>
+        </div>
+        <p class="hint">
+          Si dejas las fechas vacías, la oferta se publica de inmediato y con duración
+          indefinida. Se muestra con el sello “🔥 Oferta” en el directorio y en tu ficha.
+        </p>
+      }
+
+      @if (activeTab() === 'extras') {
+        <h2 class="promo-title">Contacto y redes</h2>
+        <div class="two">
+          <label>
+            Correo electrónico
+            <input
+              type="email"
+              placeholder="contacto@mislocal.com"
+              [value]="form().email"
+              (input)="set('email', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            Sitio web
+            <input
+              type="text"
+              placeholder="https://mislocal.com"
+              [value]="form().website"
+              (input)="set('website', $any($event.target).value)"
+            />
+          </label>
+        </div>
+        <div class="two">
+          <label>
+            Instagram
+            <input
+              type="text"
+              placeholder="@mislocal"
+              [value]="form().instagram"
+              (input)="set('instagram', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            Facebook
+            <input
+              type="text"
+              placeholder="Mi Local"
+              [value]="form().facebook"
+              (input)="set('facebook', $any($event.target).value)"
+            />
+          </label>
+        </div>
+
+        <h2 class="promo-title">Servicios y etiquetas</h2>
+        <div class="two">
+          <label>
+            Servicios (uno por línea)
+            <textarea
+              rows="4"
+              placeholder="Desayunos&#10;Almuerzos&#10;Comida del día"
+              [value]="form().serviciosText"
+              (input)="set('serviciosText', $any($event.target).value)"
+            ></textarea>
+          </label>
+          <label>
+            Etiquetas (una por línea)
+            <textarea
+              rows="4"
+              placeholder="casero&#10;comida típica"
+              [value]="form().tagsText"
+              (input)="set('tagsText', $any($event.target).value)"
+            ></textarea>
+          </label>
+        </div>
+
+        <h2 class="promo-title">Envío a domicilio</h2>
+        <label class="check">
+          <input
+            type="checkbox"
+            [checked]="form().delivery"
+            (change)="set('delivery', $any($event.target).checked)"
+          />
+          Sí ofrezco envío a domicilio
+        </label>
+        @if (form().delivery) {
+          <div class="two">
+            <label>
+              Zonas de entrega (una por línea)
+              <textarea
+                rows="3"
+                placeholder="San Raymundo&#10;San Juan Sacatepéquez"
+                [value]="form().deliveryZonesText"
+                (input)="set('deliveryZonesText', $any($event.target).value)"
+              ></textarea>
+            </label>
+            <div class="column">
+              <label>
+                Costo de envío (Q)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  [value]="form().deliveryFee"
+                  (input)="set('deliveryFee', parseNumber($any($event.target).value))"
+                />
+              </label>
+              <label>
+                Pedido mínimo (Q)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  [value]="form().minOrder"
+                  (input)="set('minOrder', parseNumber($any($event.target).value))"
+                />
+              </label>
+            </div>
+          </div>
+        }
+
+        <h2 class="promo-title">Métodos de pago</h2>
+        <label>
+          Métodos aceptados (uno por línea)
+          <textarea
+            rows="3"
+            placeholder="efectivo&#10;tarjeta&#10;transferencia"
+            [value]="form().paymentMethodsText"
+            (input)="set('paymentMethodsText', $any($event.target).value)"
+          ></textarea>
+        </label>
+
+        <h2 class="promo-title">Ofertas estructuradas (varias por negocio)</h2>
+        <label>
+          Una oferta por línea: Título | descuento | desde (YYYY-MM-DD) | hasta
+          <textarea
+            rows="4"
+            placeholder="2x1 en chuchitos los sábados | 2x1 | | 2026-12-31&#10;Café y pastel por Q30 | Combo | | 2026-09-30"
+            [value]="form().promosText"
+            (input)="set('promosText', $any($event.target).value)"
+          ></textarea>
+        </label>
+        <p class="hint">
+          A diferencia de la pestaña Promoción (una sola oferta resaltada), aquí puedes
+          publicar varias ofertas con vigencia propia. Se muestran en tu ficha pública.
+        </p>
+      }
+
+      @if (error()) {
+        <p class="err">{{ error() }}</p>
+      }
+      @if (savedMsg()) {
+        <p class="ok">{{ savedMsg() }}</p>
+      }
+
+      <div class="actions">
+        <button type="submit" [disabled]="saving()">
+          {{ saving() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+      </div>
+
+      <hr class="qr-hr" />
+      <div class="qr-owner">
+        <button type="button" class="btn-qr" (click)="toggleQr()">
+          {{ showQr() ? 'Ocultar QR de mi ficha' : 'Ver QR de mi ficha' }}
+        </button>
+        <p class="hint">
+          Imprime este código y pégalo en tu local: al escanearlo, tus clientes
+          aterrizan directo en tu ficha del directorio.
+        </p>
+        @if (showQr() && qrValue()) {
+          <lm-qr-view [value]="qrValue()" />
+        }
+      </div>
+    </form>
+  }
+</div>

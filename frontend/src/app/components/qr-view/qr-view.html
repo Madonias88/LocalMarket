@@ -1,0 +1,9 @@
+<div class="qr-box">
+  @if (dataUrl()) {
+    <img [src]="dataUrl()" alt="Código QR" width="240" height="240" />
+  } @else {
+    <p class="muted">Generando código QR...</p>
+  }
+  <p class="qr-value">{{ value }}</p>
+  <a class="qr-dl" [href]="dataUrl() || undefined" download="qr-negocio.png">Descargar PNG</a>
+</div>

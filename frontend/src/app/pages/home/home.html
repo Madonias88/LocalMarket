@@ -1,0 +1,282 @@
+<main class="container">
+  <div class="hero">
+    <h1>Encuentra negocios <span class="hero-accent">cerca de ti</span></h1>
+    <p>Descubre restaurantes, tiendas y servicios locales con reseñas, horarios y promociones.</p>
+  </div>
+
+  <div class="controls">
+    <input
+      type="search"
+      placeholder="Buscar por nombre, rubro o dirección..."
+      [value]="query()"
+      (input)="setQuery($any($event.target).value)"
+    />
+    <select
+      [value]="sortBy()"
+      (change)="setSort($any($event.target).value)"
+      class="sort"
+    >
+      <option value="distance">Más cercanos</option>
+      <option value="rating">Mejor calificados</option>
+      <option value="name">Nombre (A-Z)</option>
+    </select>
+    <label class="open-toggle" [class.on]="onlyOpen()">
+      <input type="checkbox" [checked]="onlyOpen()" (change)="setOpen($any($event.target).checked)" />
+      Abierto ahora
+    </label>
+  </div>
+
+  <div class="advanced-bar">
+    <button
+      type="button"
+      class="advanced-toggle"
+      [class.on]="showAdvanced()"
+      (click)="toggleAdvanced()"
+    >
+      ⚙ {{ showAdvanced() ? 'Ocultar filtros avanzados' : 'Filtros avanzados' }}
+      @if (advancedCount() > 0) {
+        <span class="adv-badge">{{ advancedCount() }}</span>
+      }
+    </button>
+    @if (advancedCount() > 0) {
+      <button type="button" class="reset" (click)="clearAdvanced()">Limpiar filtros</button>
+    }
+  </div>
+
+  @if (showAdvanced()) {
+    <section class="advanced-panel">
+      <div class="adv-grid">
+        <label class="field">
+          Rating mínimo
+          <select
+            [value]="valueOf(ratingMin())"
+            (change)="setRatingMin($any($event.target).value)"
+          >
+            <option value="">Cualquiera</option>
+            @for (r of ratingOptions; track r) {
+              <option [value]="r">{{ r }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          Rating máximo
+          <select
+            [value]="valueOf(ratingMax())"
+            (change)="setRatingMax($any($event.target).value)"
+          >
+            <option value="">Cualquiera</option>
+            @for (r of ratingOptions; track r) {
+              <option [value]="r">{{ r }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          Cantidad de fotos
+          <select
+            [value]="valueOf(fotosExactas())"
+            (change)="setFotos($any($event.target).value)"
+          >
+            <option value="">Cualquiera</option>
+            <option value="0">Sin fotos</option>
+            <option value="1">1 foto</option>
+            <option value="2">2 fotos</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="adv-row">
+        <span class="adv-lbl">Precio</span>
+        @for (p of priceOptions; track p) {
+          <button
+            type="button"
+            class="chip"
+            [class.active]="priceActive(p)"
+            (click)="togglePrice(p)"
+          >
+            {{ p }}
+          </button>
+        }
+      </div>
+
+      <div class="adv-row">
+        <button
+          type="button"
+          class="chip"
+          [class.active]="onlyFeatured()"
+          (click)="toggleFeatured()"
+        >
+          ★ Destacados
+        </button>
+        <button
+          type="button"
+          class="chip"
+          [class.active]="onlyVerified()"
+          (click)="toggleVerified()"
+        >
+          ✔ Verificados
+        </button>
+        <button
+          type="button"
+          class="chip"
+          [class.active]="onlyPromo()"
+          (click)="togglePromo()"
+        >
+          🔥 Con promoción
+        </button>
+        <button
+          type="button"
+          class="chip"
+          [class.active]="withPhotos()"
+          (click)="togglePhotos()"
+        >
+          📷 Con fotos
+        </button>
+        <button
+          type="button"
+          class="chip"
+          [class.active]="onlyDelivery()"
+          (click)="toggleDelivery()"
+        >
+          🚚 Con envío
+        </button>
+      </div>
+    </section>
+  }
+
+  @if (zones().length > 0) {
+    <div class="chips">
+      <button
+        class="chip"
+        [class.active]="!selectedZone()"
+        (click)="clearZone()"
+      >
+        Todas las zonas
+      </button>
+      @for (zone of zones(); track zone) {
+        <button
+          class="chip"
+          [class.active]="selectedZone() === zone"
+          (click)="toggleZone(zone)"
+        >
+          {{ zone }}
+        </button>
+      }
+    </div>
+  }
+
+  @if (hasFavs()) {
+    <div class="chips">
+      <button
+        class="chip"
+        [class.active]="onlyFavs()"
+        (click)="setFavs()"
+      >
+        ★ Mis favoritos
+      </button>
+    </div>
+  }
+
+  <div class="chips">
+    <button
+      class="chip"
+      [class.active]="!selectedCategory()"
+      (click)="clearCategory()"
+    >
+      Todas
+    </button>
+    @for (cat of categories(); track cat._id) {
+      <button
+        class="chip"
+        [class.active]="selectedCategory() === cat._id"
+        (click)="toggleCategory(cat._id)"
+      >
+        {{ cat.name }}
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <p class="muted">Cargando negocios...</p>
+  } @else if (filtered().length === 0) {
+    <p class="muted">No hay negocios que coincidan con los filtros.</p>
+  } @else {
+    <div class="grid">
+      @for (biz of visible(); track biz._id) {
+        <a class="card" [routerLink]="['/negocio', biz._id]">
+          <div class="thumb-wrap">
+            <img
+              class="thumb"
+              [src]="(biz.photoUrls && biz.photoUrls[0]) || 'https://picsum.photos/seed/default/600/400'"
+              alt="{{ biz.name }}"
+              loading="lazy"
+            />
+            <button
+              type="button"
+              class="fav"
+              [class.on]="isFav(biz._id)"
+              (click)="$event.preventDefault(); $event.stopPropagation(); toggleFav(biz._id)"
+              [attr.aria-label]="isFav(biz._id) ? 'Quitar de favoritos' : 'Guardar negocio'"
+            >★</button>
+          </div>
+          <div class="body">
+            <div class="row">
+              <span class="name">{{ biz.name }}</span>
+              <span class="price">{{ biz.priceRange }}</span>
+            </div>
+            <div class="badges-col">
+              <span class="badge">{{ categoryName(biz.categoryId) }}</span>
+              @if (biz.zone) {
+                <span class="badge zone">{{ biz.zone }}</span>
+              }
+              @if (biz.featured) {
+                <span class="badge feat">★ Destacado</span>
+              }
+              @if (hasPromo(biz)) {
+                <span class="badge promo">🔥 Promo</span>
+              }
+            </div>
+            <p class="desc">{{ biz.description }}</p>
+            <div class="row meta">
+              <span class="rating">★ {{ biz.rating | number: '1.1-1' }}</span>
+              <span class="status" [class.open]="isOpen(biz)">{{ openLabel(biz) }}</span>
+              <span class="distance">{{ distanceLabel(biz) }}</span>
+            </div>
+          </div>
+        </a>
+      }
+    </div>
+
+    <p class="list-meta">
+      Mostrando {{ startIndex() }}–{{ endIndex() }} de {{ totalResults() }}
+      {{ totalResults() === 1 ? 'negocio' : 'negocios' }}
+    </p>
+
+    @if (pageCount() > 1) {
+      <nav class="pager" aria-label="Paginación de resultados">
+        <button
+          class="pg"
+          [disabled]="page() === 1"
+          (click)="goToPage(page() - 1)"
+        >
+          ‹ Anterior
+        </button>
+        @for (p of pages(); track p) {
+          <button
+            class="pg"
+            [class.on]="p === page()"
+            (click)="goToPage(p)"
+          >
+            {{ p }}
+          </button>
+        }
+        <button
+          class="pg"
+          [disabled]="page() === pageCount()"
+          (click)="goToPage(page() + 1)"
+        >
+          Siguiente ›
+        </button>
+      </nav>
+    }
+  }
+</main>

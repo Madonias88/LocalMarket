@@ -1,0 +1,134 @@
+<main class="landing">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <span class="eyebrow">✦ 100% local · Hecho en Guatemala</span>
+      <h1>
+        Descubre y apoya los
+        <span class="accent">negocios locales</span> cerca de ti
+      </h1>
+      <p class="sub">
+        Restaurantes, tiendas y servicios de San Raymundo, San Juan
+        Sacatepéquez, Ciudad Quetzal y Ciudad de Guatemala, con horarios,
+        reseñas y promociones en un solo lugar.
+      </p>
+      <div class="hero-cta">
+        <a class="btn-primary" routerLink="/negocios">Explorar negocios <span class="arrow">→</span></a>
+        <a class="btn-ghost" routerLink="/promos">Ver promociones</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  @if (!loading()) {
+    <section class="stats">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <strong>{{ stats().negocios }}+</strong>
+          <span>Negocios locales</span>
+        </div>
+        <div class="stat-card">
+          <strong>{{ stats().categorias }}</strong>
+          <span>Categorías</span>
+        </div>
+        <div class="stat-card">
+          <strong>{{ stats().zonas }}</strong>
+          <span>Zonas cubiertas</span>
+        </div>
+        <div class="stat-card">
+          <strong>★ 4.5</strong>
+          <span>Calificación promedio</span>
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- VENTAJAS -->
+  <section class="section">
+    <h2>Todo lo que necesitas, en un solo lugar</h2>
+    <p class="lead">
+      Pensado para quienes prefieren consumir local y para los emprendedores
+      que quieren que su negocio se encuentre fácil.
+    </p>
+    <div class="features-grid">
+      <article class="feature">
+        <span class="icon">📍</span>
+        <h3>Ubicación y horarios</h3>
+        <p>Mapa, indicaciones, WhatsApp y horarios de atención siempre a la mano.</p>
+      </article>
+      <article class="feature">
+        <span class="icon">⭐</span>
+        <h3>Reseñas de clientes</h3>
+        <p>Calificaciones y comentarios reales de la comunidad para decidir mejor.</p>
+      </article>
+      <article class="feature">
+        <span class="icon">🔥</span>
+        <h3>Promociones activas</h3>
+        <p>Ofertas vigentes de cada negocio en una sola sección de promociones.</p>
+      </article>
+      <article class="feature">
+        <span class="icon">🔖</span>
+        <h3>Guarda tus favoritos</h3>
+        <p>Marca los negocios con una estrella y encuéntralos al instante.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- CATEGORÍAS -->
+  <section class="section">
+    <h2>¿Qué buscas hoy?</h2>
+    <p class="lead">Elige una categoría y entra directo al directorio.</p>
+    <div class="cat-chips">
+      @for (cat of categories(); track cat._id) {
+        <a routerLink="/negocios">{{ cat.name }}</a>
+      }
+    </div>
+  </section>
+
+  <!-- DESTACADOS -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Destacados de la comunidad</h2>
+      <a class="link-all" routerLink="/negocios">Ver todos →</a>
+    </div>
+    @if (loading()) {
+      <p class="muted">Cargando negocios...</p>
+    } @else {
+      <div class="featured-grid">
+        @for (biz of featured(); track biz._id) {
+          <a class="card" [routerLink]="['/negocio', biz._id]">
+            <img
+              class="thumb"
+              [src]="(biz.photoUrls && biz.photoUrls[0]) || 'https://picsum.photos/seed/default/600/400'"
+              [alt]="biz.name"
+              loading="lazy"
+            />
+            <div class="body">
+              <div class="row">
+                <span class="name">{{ biz.name }}</span>
+                <span class="price">{{ biz.priceRange }}</span>
+              </div>
+              <span class="badge">{{ catName(biz.categoryId) }}</span>
+              <div class="row meta">
+                <span class="rating">★ {{ biz.rating | number: '1.1-1' }}</span>
+                <span class="zone">{{ biz.zone }}</span>
+              </div>
+            </div>
+          </a>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- CTA PARA EMPRENDEDORES -->
+  <section class="cta">
+    <div class="cta-inner">
+      <h2>¿Tienes un negocio local?</h2>
+      <p>
+        Llévate tu ficha con fotos, horarios, promociones y enlace de WhatsApp.
+        Sin comisiones ni páginas complicadas.
+      </p>
+      <a class="btn-light" routerLink="/registro">Registra tu negocio</a>
+    </div>
+  </section>
+</main>

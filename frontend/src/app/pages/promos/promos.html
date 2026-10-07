@@ -1,0 +1,45 @@
+<main class="container">
+  <div class="hero">
+    <h1><span class="accent">🔥 Promociones</span> activas</h1>
+    <p>Ofertas vigentes de los negocios del directorio, de San Raymundo a Ciudad de Guatemala.</p>
+  </div>
+
+  @if (loading()) {
+    <p class="muted">Cargando promociones...</p>
+  } @else if (withPromos().length === 0) {
+    <p class="muted">Por ahora no hay promociones activas. ¡Vuelve pronto!</p>
+  } @else {
+    <div class="grid">
+      @for (biz of withPromos(); track biz._id) {
+        <a class="card" [routerLink]="['/negocio', biz._id]">
+          <div class="thumb-wrap">
+            <img
+              class="thumb"
+              [src]="(biz.photoUrls && biz.photoUrls[0]) || 'https://picsum.photos/seed/promo600/400'"
+              alt="{{ biz.name }}"
+              loading="lazy"
+            />
+            <span class="promo-tag">🔥 Oferta</span>
+          </div>
+          <div class="body">
+            <div class="row">
+              <span class="name">{{ biz.name }}</span>
+              <span class="price">{{ biz.priceRange }}</span>
+            </div>
+            <div class="badges-col">
+              @if (biz.zone) {
+                <span class="badge zone">{{ biz.zone }}</span>
+              }
+            </div>
+            <p class="promo-text">{{ biz.promoText }}</p>
+            <div class="row meta">
+              <span class="rating">★ {{ biz.rating | number: '1.1-1' }}</span>
+              <span class="status" [class.open]="isOpen(biz)">{{ openLabel(biz) }}</span>
+              <span class="distance">{{ distanceLabel(biz) }}</span>
+            </div>
+          </div>
+        </a>
+      }
+    </div>
+  }
+</main>

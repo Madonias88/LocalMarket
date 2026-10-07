@@ -1,0 +1,57 @@
+<header class="site-header">
+  <a routerLink="/" class="logo">
+    <span class="logo-mark">LM</span>
+    <span class="logo-text">Local<strong>Market</strong></span>
+  </a>
+  <nav class="site-nav">
+    <a
+      routerLink="/"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >Inicio</a>
+    <a routerLink="/negocios" routerLinkActive="active">Negocios</a>
+    <a routerLink="/promos" routerLinkActive="active">Promociones</a>
+    <a routerLink="/mi-negocio" routerLinkActive="active">Mi negocio</a>
+    @if (auth.authed()) {
+      <button class="btn-logout" (click)="logout()">Salir</button>
+    }
+  </nav>
+</header>
+
+<router-outlet />
+
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div class="about">
+      <span class="logo-text">Local<strong>Market</strong></span>
+      <p>
+        El directorio de negocios y emprendedores del área de San Raymundo,
+        San Juan Sacatepéquez, Ciudad Quetzal y Ciudad de Guatemala.
+      </p>
+    </div>
+    <div class="col">
+      <h4>Explora</h4>
+      <a routerLink="/negocios">Directorio de negocios</a>
+      <a routerLink="/registro">Registrar mi negocio</a>
+      <a routerLink="/promos">Promociones</a>
+      <a routerLink="/mi-negocio">Mi negocio</a>
+    </div>
+    <div class="col">
+      <h4>Zonas</h4>
+      <a routerLink="/negocios">San Raymundo</a>
+      <a routerLink="/negocios">San Juan Sacatepéquez</a>
+      <a routerLink="/negocios">Ciudad Quetzal</a>
+      <a routerLink="/negocios">Ciudad de Guatemala</a>
+    </div>
+    <div class="col">
+      <h4>Contacto</h4>
+      <span>info@localmarket.example</span>
+      <span>+502 5555 0000</span>
+      <span>Guatemala, C.A.</span>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© {{ year }} LocalMarket · Hecho en Guatemala</span>
+    <span>Datos de demostración</span>
+  </div>
+</footer>

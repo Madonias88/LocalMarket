@@ -1,0 +1,43 @@
+.qr-box {
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.qr-box img {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.qr-value {
+  font-size: 0.78rem;
+  color: var(--muted);
+  word-break: break-all;
+  max-width: 280px;
+  text-align: center;
+  margin: 0;
+}
+
+.qr-dl {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  border: 1px solid var(--primary);
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+}
+
+.qr-dl:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.muted {
+  color: var(--muted);
+  margin: 0;
+}

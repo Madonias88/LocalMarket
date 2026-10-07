@@ -1,0 +1,33 @@
+# Node modules
+node_modules/
+**/node_modules/
+
+# Build and dist outputs
+dist/
+**/dist/
+.angular/
+**/.angular/
+tmp/
+**/tmp/
+
+# Environment files
+.env
+backend/.env
+!.env.example
+!backend/.env.example
+
+# Uploads and logs
+uploads/
+**/uploads/*
+!**/uploads/.gitkeep
+*.log
+**/logs/
+
+# Scratch & temporary scripts
+scratch/
+**/scratch/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/

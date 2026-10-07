@@ -1,0 +1,482 @@
+@if (!auth.authed()) {
+  <main class="login">
+    <form class="card" (ngSubmit)="doLogin()">
+      <div class="login-head">
+        <span class="monogram">AD</span>
+        <h1>Administración</h1>
+        <p>Acceso restringido para el equipo de LocalMarket.</p>
+      </div>
+      <label class="field">
+        Usuario
+        <input
+          type="text"
+          autocomplete="username"
+          placeholder="usuario"
+          [value]="username()"
+          (input)="username.set($any($event.target).value)"
+        />
+      </label>
+      <label class="field">
+        Contraseña
+        <span class="pwd-wrap">
+          <input
+            [type]="showPassword() ? 'text' : 'password'"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            [value]="password()"
+            (input)="password.set($any($event.target).value)"
+          />
+          <button
+            type="button"
+            class="pwd-toggle"
+            (click)="showPassword.set(!showPassword())"
+          >
+            {{ showPassword() ? 'Ocultar' : 'Ver' }}
+          </button>
+        </span>
+      </label>
+      @if (error()) {
+        <p class="err">{{ error() }}</p>
+      }
+      <button type="submit" class="submit">Entrar</button>
+    </form>
+  </main>
+} @else {
+  <main class="container">
+  <div class="admin-bar">
+    <h1>Panel de administración</h1>
+    <nav>
+      <a routerLink="/">Ver directorio</a>
+    </nav>
+  </div>
+
+  @if (error()) {
+      <p class="err">{{ error() }}</p>
+    }
+
+    @if (stats(); as s) {
+      <section class="stats">
+        <div class="stat"><span class="num">{{ s.total }}</span><span class="lbl">Total negocios</span></div>
+        <div class="stat good"><span class="num">{{ s.active }}</span><span class="lbl">Activos</span></div>
+        <div class="stat bad"><span class="num">{{ s.inactive }}</span><span class="lbl">Inactivos</span></div>
+        <div class="stat"><span class="num">{{ s.featured }}</span><span class="lbl">Destacados</span></div>
+        <button class="stat mod" (click)="toggleReviews()">
+          <span class="num">
+            Reseñas {{ s.pendingReviews }}
+            @if (s.pendingReviews > 0) {
+              <span class="dot"></span>
+            }
+          </span>
+          <span class="lbl">pendientes de moderar</span>
+        </button>
+        <div class="stat wide">
+          <span class="lbl">Top categorías</span>
+          <span class="num list">{{ topCategories() }}</span>
+        </div>
+        <div class="stat wide">
+          <span class="lbl">Por zona</span>
+          <span class="num list">{{ zonesSummary() }}</span>
+        </div>
+      </section>
+    }
+
+    @if (showReviews()) {
+      <section class="card reviews-panel">
+        <div class="reviews-head">
+          <h2>Moderación de reseñas</h2>
+          <div class="tabs">
+            <button
+              class="link"
+              [class.active]="reviewFilter() === 'pending'"
+              (click)="setReviewFilter('pending')"
+            >
+              Pendientes ({{ pendingReviews() }})
+            </button>
+            <button
+              class="link"
+              [class.active]="reviewFilter() === 'approved'"
+              (click)="setReviewFilter('approved')"
+            >
+              Publicadas
+            </button>
+          </div>
+        </div>
+
+        @if (reviewLoading()) {
+          <p class="muted">Procesando...</p>
+        }
+        @if (reviewMsg()) {
+          <p class="msg">{{ reviewMsg() }}</p>
+        }
+
+        @if (reviews().length) {
+          <div class="review-list">
+            @for (r of reviews(); track r._id) {
+              <div class="review" [class.rejected]="!r.approved">
+                <div class="review-info">
+                  <div class="stars">
+                    @for (i of [1, 2, 3, 4, 5]; track i) {
+                      <span [class.on]="i <= r.rating">★</span>
+                    }
+                  </div>
+                  <strong>{{ r.userName }}</strong>
+                  <span class="muted">sobre {{ businessName(r.businessId) }}</span>
+                  <span class="muted date">{{ r.createdAt | date: 'd MMM yyyy, HH:mm' }}</span>
+                </div>
+                @if (r.comment) {
+                  <p>{{ r.comment }}</p>
+                }
+                <div class="review-actions">
+                  @if (!r.approved) {
+                    <button class="outline small" (click)="approveReview(r)">✔ Aprobar y publicar</button>
+                    <button class="danger small" (click)="deleteReview(r)">Eliminar</button>
+                  } @else {
+                    <button class="danger small" (click)="deleteReview(r)">Eliminar</button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="muted">No hay reseñas en esta lista.</p>
+        }
+      </section>
+    }
+
+    <div class="toolbar">
+      <div class="filters">
+        <input
+          type="search"
+          placeholder="Buscar por nombre o dirección..."
+          [value]="search()"
+          (input)="search.set($any($event.target).value)"
+        />
+        <label class="open-toggle">
+          <input type="checkbox" [checked]="activeOnly()" (change)="activeOnly.set($any($event.target).checked)" />
+          Solo activos
+        </label>
+        <select [value]="sortBy()" (change)="sortBy.set($any($event.target).value)">
+          <option value="name">Ordenar por nombre</option>
+          <option value="rating">Por rating</option>
+          <option value="createdAt">Por creación</option>
+        </select>
+      </div>
+      <button (click)="newBusiness()">+ Nuevo negocio</button>
+      <button (click)="togglePending()">
+        {{ showPending() ? 'Ocultar solicitudes' : 'Solicitudes (' + pendingList().length + ')' }}
+      </button>
+    </div>
+
+    @if (showPending()) {
+      <section class="card pending-panel">
+        <div class="reviews-head">
+          <h2>Solicitudes de registro pendientes</h2>
+        </div>
+
+        @if (pendingMsg()) {
+          <p class="msg">{{ pendingMsg() }}</p>
+        }
+
+        @if (pendingLoading()) {
+          <p class="muted">Procesando...</p>
+        }
+
+        @if (pendingList().length) {
+          <div class="review-list">
+            @for (b of pendingList(); track b._id) {
+              <div class="review">
+                <div class="review-info">
+                  <strong>{{ b.name }}</strong>
+                  <span class="muted">{{ categoryName(b.categoryId) }} · {{ b.zone || 'sin zona' }}</span>
+                  <span class="muted date">{{ b.createdAt | date: 'd MMM yyyy, HH:mm' }}</span>
+                  @if (b.description) {
+                    <p>{{ b.description }}</p>
+                  }
+                </div>
+                <div class="review-actions">
+                  <button class="outline small" [disabled]="pendingLoading()" (click)="approvePending(b)">
+                    ✔ Aprobar y publicar
+                  </button>
+                  <button class="outline small" [disabled]="pendingLoading()" (click)="editBusiness(b)">Editar</button>
+                  <button class="danger small" [disabled]="pendingLoading()" (click)="rejectPending(b)">
+                    Rechazar
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="muted">No hay solicitudes pendientes. Todo publicado.</p>
+        }
+      </section>
+    }
+
+    @if (editing(); as f) {
+      <form class="card form" (ngSubmit)="save()">
+        <h2>{{ f._id ? 'Editar' : 'Nuevo' }} negocio</h2>
+        <input
+          placeholder="Nombre *"
+          required
+          [value]="f.name"
+          (input)="editing()!.name = $any($event.target).value"
+        />
+        <select
+          required
+          [value]="f.categoryId"
+          (change)="editing()!.categoryId = $any($event.target).value"
+        >
+          <option value="" disabled>Selecciona categoría *</option>
+          @for (c of categories(); track c._id) {
+            <option [value]="c._id">{{ c.name }}</option>
+          }
+        </select>
+        <textarea
+          placeholder="Descripción"
+          rows="2"
+          [value]="f.description"
+          (input)="editing()!.description = $any($event.target).value"
+        ></textarea>
+        <input
+          placeholder="Dirección"
+          [value]="f.address"
+          (input)="editing()!.address = $any($event.target).value"
+        />
+        <input
+          placeholder="Zona / municipio (ej. San Raymundo)"
+          [value]="f.zone"
+          (input)="editing()!.zone = $any($event.target).value"
+        />
+        <div class="two">
+          <input
+            placeholder="Teléfono"
+            [value]="f.phone"
+            (input)="editing()!.phone = $any($event.target).value"
+          />
+          <input
+            placeholder="WhatsApp"
+            [value]="f.whatsapp"
+            (input)="editing()!.whatsapp = $any($event.target).value"
+          />
+        </div>
+        <div class="two">
+          <input
+            placeholder="Latitud"
+            type="number"
+            step="any"
+            [value]="f.latitude"
+            (input)="editing()!.latitude = parseNumber($any($event.target).value)"
+          />
+          <input
+            placeholder="Longitud"
+            type="number"
+            step="any"
+            [value]="f.longitude"
+            (input)="editing()!.longitude = parseNumber($any($event.target).value)"
+          />
+        </div>
+        <div class="two">
+          <input
+            placeholder="Rango de precio ($, $$, $$$)"
+            [value]="f.priceRange"
+            (input)="editing()!.priceRange = $any($event.target).value"
+          />
+          <input
+            placeholder="Rating (0-5)"
+            type="number"
+            min="0"
+            max="5"
+            step="0.1"
+            [value]="f.rating"
+            (input)="editing()!.rating = parseNumber($any($event.target).value)"
+          />
+        </div>
+        <textarea
+          placeholder="URLs de fotos (una por línea)"
+          rows="2"
+          [value]="f.photoUrls"
+          (input)="editing()!.photoUrls = $any($event.target).value"
+        ></textarea>
+        <label class="heading" for="promo-field">Promoción vigente</label>
+        <input
+          id="promo-field"
+          placeholder="Texto de la oferta (ej. 2x1 en sábados)"
+          [value]="f.promoText"
+          (input)="editing()!.promoText = $any($event.target).value"
+        />
+        <div class="two">
+          <input
+            type="date"
+            placeholder="Inicio"
+            [value]="f.promoStart"
+            (change)="editing()!.promoStart = $any($event.target).value"
+          />
+          <input
+            type="date"
+            placeholder="Fin (vacío = sin fin)"
+            [value]="f.promoEnd"
+            (change)="editing()!.promoEnd = $any($event.target).value"
+          />
+        </div>
+        <label class="heading">Contacto y redes</label>
+        <div class="two">
+          <input
+            placeholder="Correo electrónico"
+            type="email"
+            [value]="f.email"
+            (input)="editing()!.email = $any($event.target).value"
+          />
+          <input
+            placeholder="Sitio web"
+            [value]="f.website"
+            (input)="editing()!.website = $any($event.target).value"
+          />
+        </div>
+        <div class="two">
+          <input
+            placeholder="Instagram"
+            [value]="f.instagram"
+            (input)="editing()!.instagram = $any($event.target).value"
+          />
+          <input
+            placeholder="Facebook"
+            [value]="f.facebook"
+            (input)="editing()!.facebook = $any($event.target).value"
+          />
+        </div>
+        <label class="heading">Servicios y etiquetas</label>
+        <div class="two">
+          <textarea
+            placeholder="Servicios (uno por línea)"
+            rows="3"
+            [value]="f.serviciosText"
+            (input)="editing()!.serviciosText = $any($event.target).value"
+          ></textarea>
+          <textarea
+            placeholder="Etiquetas (una por línea)"
+            rows="3"
+            [value]="f.tagsText"
+            (input)="editing()!.tagsText = $any($event.target).value"
+          ></textarea>
+        </div>
+        <label class="heading">Envío a domicilio</label>
+        <label class="check">
+          <input type="checkbox" [checked]="f.delivery" (change)="editing()!.delivery = $any($event.target).checked" />
+          Ofrece envío
+        </label>
+        @if (f.delivery) {
+          <div class="two">
+            <textarea
+              placeholder="Zonas de entrega (una por línea)"
+              rows="3"
+              [value]="f.deliveryZonesText"
+              (input)="editing()!.deliveryZonesText = $any($event.target).value"
+            ></textarea>
+            <div class="two">
+              <input
+                placeholder="Costo envío (Q)"
+                type="number"
+                min="0"
+                step="0.5"
+                [value]="f.deliveryFee"
+                (input)="editing()!.deliveryFee = parseNumber($any($event.target).value)"
+              />
+              <input
+                placeholder="Pedido mínimo (Q)"
+                type="number"
+                min="0"
+                step="0.5"
+                [value]="f.minOrder"
+                (input)="editing()!.minOrder = parseNumber($any($event.target).value)"
+              />
+            </div>
+          </div>
+        }
+        <label class="heading">Métodos de pago y ofertas</label>
+        <textarea
+          placeholder="Métodos de pago (uno por línea): efectivo / tarjeta / transferencia..."
+          rows="2"
+          [value]="f.paymentMethodsText"
+          (input)="editing()!.paymentMethodsText = $any($event.target).value"
+        ></textarea>
+        <textarea
+          placeholder="Ofertas: una por línea «Título | descuento | desde | hasta»"
+          rows="2"
+          [value]="f.promosText"
+          (input)="editing()!.promosText = $any($event.target).value"
+        ></textarea>
+        <label class="heading">Popularidad</label>
+        <div class="two">
+          <input
+            placeholder="Vistas (viewsCount)"
+            type="number"
+            min="0"
+            [value]="f.viewsCount"
+            (input)="editing()!.viewsCount = parseNumber($any($event.target).value)"
+          />
+          <input
+            placeholder="Reseñas (reviewCount)"
+            type="number"
+            min="0"
+            [value]="f.reviewCount"
+            (input)="editing()!.reviewCount = parseNumber($any($event.target).value)"
+          />
+        </div>
+        <label class="check">
+          <input type="checkbox" [checked]="f.verified" (change)="editing()!.verified = $any($event.target).checked" />
+          Verificado
+        </label>
+        <label class="check">
+          <input type="checkbox" [checked]="f.featured" (change)="editing()!.featured = $any($event.target).checked" />
+          Destacado
+        </label>
+        <div class="actions">
+          <button type="submit" [disabled]="saving()">
+            {{ saving() ? 'Guardando...' : 'Guardar' }}
+          </button>
+          <button type="button" class="outline" (click)="cancelEdit()">Cancelar</button>
+        </div>
+      </form>
+    }
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Zona</th>
+          <th>Rating</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (b of visibleBusinesses(); track b._id) {
+          <tr [class.row-inactive]="b.active === false">
+            <td>
+              {{ b.name }}
+              @if (b.featured) {
+                <span class="tag">destacado</span>
+              }
+              @if (b.active === false) {
+                <span class="tag inactive">inactivo</span>
+              }
+            </td>
+            <td>{{ b.categoryId }}</td>
+            <td>{{ b.zone || '—' }}</td>
+            <td>{{ b.rating }}</td>
+            <td class="row-actions">
+              <button class="outline small" (click)="editBusiness(b)">Editar</button>
+              <button class="outline small" (click)="toggleFeatured(b)">
+                {{ b.featured ? 'Quitar★' : 'Destacar' }}
+              </button>
+              @if (b.active === false) {
+                <button class="outline small" (click)="toggleActive(b)">Activar</button>
+              } @else {
+                <button class="danger small" (click)="toggleActive(b)">Desactivar</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </main>
+}

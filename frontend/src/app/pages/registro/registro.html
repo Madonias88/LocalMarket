@@ -1,0 +1,156 @@
+<main class="container">
+  <div class="head">
+    <span class="eyebrow">✦ Registro gratuito</span>
+    <h1>Dale presencia digital a tu negocio</h1>
+    <p class="sub">
+      Completa tus datos y tu ficha quedará en revisión. En cuanto el equipo de
+      LocalMarket la apruebe, se publicará en el directorio y podrás gestionarla
+      desde "Mi negocio" con el usuario y contraseña que elijas.
+    </p>
+  </div>
+
+  @if (done()) {
+    <div class="card done">
+      <span class="done-icon">✅</span>
+      <h2>¡Registro recibido!</h2>
+      <p>{{ done() }}</p>
+      <div class="actions">
+        <a class="btn" routerLink="/negocios">Ver directorio</a>
+        <a class="btn ghost" routerLink="/">Volver al inicio</a>
+      </div>
+    </div>
+  } @else {
+    <form class="card form" (ngSubmit)="submit()">
+      <div class="grid">
+        <label>
+          Nombre del negocio *
+          <input
+            type="text"
+            placeholder="Ej. Panadería La Espiga"
+            [value]="form().name"
+            (input)="set('name', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          Categoría *
+          <select
+            [value]="form().categoryId"
+            (change)="set('categoryId', $any($event.target).value)"
+          >
+            <option value="" disabled>Selecciona una categoría</option>
+            @for (c of categories(); track c._id) {
+              <option [value]="c._id">{{ c.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="full">
+          Descripción
+          <textarea
+            rows="3"
+            placeholder="¿Qué ofreces? Cuéntale a tus clientes."
+            [value]="form().description"
+            (input)="set('description', $any($event.target).value)"
+          ></textarea>
+        </label>
+        <label>
+          Dirección
+          <input
+            type="text"
+            placeholder="Ej. 3a. Calle 4-12, zona 1"
+            [value]="form().address"
+            (input)="set('address', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          Zona / municipio
+          <input
+            type="text"
+            placeholder="Ej. San Raymundo"
+            [value]="form().zone"
+            (input)="set('zone', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          Teléfono
+          <input
+            type="tel"
+            placeholder="+502 5555 0000"
+            [value]="form().phone"
+            (input)="set('phone', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          WhatsApp
+          <input
+            type="tel"
+            placeholder="502 5555 0000"
+            [value]="form().whatsapp"
+            (input)="set('whatsapp', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          Latitud (opcional)
+          <input
+            type="number"
+            step="any"
+            placeholder="14.7646"
+            [value]="form().latitude"
+            (input)="set('latitude', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          Longitud (opcional)
+          <input
+            type="number"
+            step="any"
+            placeholder="-90.5949"
+            [value]="form().longitude"
+            (input)="set('longitude', $any($event.target).value)"
+          />
+        </label>
+        <label>
+          Rango de precio
+          <select [value]="form().priceRange" (change)="set('priceRange', $any($event.target).value)">
+            <option>$</option>
+            <option>$$</option>
+            <option>$$$</option>
+          </select>
+        </label>
+        <label class="full">
+          Usuario para tu cuenta * <span class="hint">con este usuario entrarás a "Mi negocio"</span>
+          <input
+            type="text"
+            autocomplete="username"
+            placeholder="Ej. panaderia-la-espiga"
+            [value]="form().username"
+            (input)="set('username', $any($event.target).value)"
+          />
+        </label>
+        <label class="full">
+          Contraseña * <span class="hint">mínimo 6 caracteres</span>
+          <input
+            type="password"
+            autocomplete="new-password"
+            placeholder="••••••••"
+            [value]="form().password"
+            (input)="set('password', $any($event.target).value)"
+          />
+        </label>
+      </div>
+
+      @if (error()) {
+        <p class="err">{{ error() }}</p>
+      }
+
+      <div class="actions">
+        <button type="submit" class="btn" [disabled]="sending()">
+          {{ sending() ? 'Enviando...' : 'Solicitar registro' }}
+        </button>
+        <p class="note">
+          Tu negocio no se publicará hasta que un administrador apruebe tu
+          solicitud. Cuando eso pase, entrarás con tu usuario en "Mi negocio".
+        </p>
+      </div>
+    </form>
+  }
+</main>

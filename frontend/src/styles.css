@@ -1,0 +1,20 @@
+/* Estilos globales LocalMarket */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #f1f5f9;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+::selection {
+  background: #99f6e4;
+  color: #0f172a;
+}

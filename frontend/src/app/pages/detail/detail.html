@@ -1,0 +1,249 @@
+<a routerLink="/" class="back">← Volver al directorio</a>
+
+@if (loading()) {
+  <p class="muted">Cargando negocio...</p>
+} @else if (notFound() || !business()) {
+  <p class="muted">Negocio no encontrado.</p>
+} @else {
+  @let b = business()!;
+
+  <article class="detail">
+    <div class="gallery">
+      <img class="hero" [src]="photo()" alt="{{ b.name }}" />
+      @if (photos().length > 1) {
+        <div class="thumbs">
+          @for (p of photos(); track p; let i = $index) {
+            <img
+              class="thumb"
+              [class.active]="selectedPhoto() === i"
+              [src]="p"
+              alt="Foto {{ i + 1 }}"
+              (click)="selectedPhoto.set(i)"
+            />
+          }
+        </div>
+      }
+    </div>
+
+    <div class="content">
+      <div class="head">
+        <h1>{{ b.name }}</h1>
+        <div class="meta">
+          <span class="badge">{{ categoryName(b.categoryId) }}</span>
+          @if (b.zone) {
+            <span class="badge zone">{{ b.zone }}</span>
+          }
+          @if (hasPromo()) {
+            <span class="badge promo">🔥 Promo</span>
+          }
+          <span class="rating">★ {{ b.rating | number: '1.1-1' }}</span>
+          <span class="price">{{ b.priceRange }}</span>
+          @if (b.verified) {
+            <span class="verified">✔ Verificado</span>
+          }
+          @if ((b.viewsCount ?? 0) > 0 || (b.reviewCount ?? 0) > 0) {
+            <span class="popularity">👁 {{ b.viewsCount ?? 0 }} · ✍ {{ b.reviewCount ?? 0 }}</span>
+          }
+        </div>
+        <p>
+          <span class="status" [class.open]="statusLabel() === 'Abierto ahora'">{{ statusLabel() }}</span>
+          @if (distanceLabel()) {
+            <span class="distance"> · {{ distanceLabel() }} desde tu ubicación</span>
+          }
+        </p>
+      </div>
+
+      @if (hasPromo()) {
+        <div class="promo-banner">
+          <strong>🔥 Oferta:</strong> {{ b.promoText }}
+        </div>
+      }
+
+      @if (activePromos().length) {
+        <div class="promos">
+          @for (p of activePromos(); track p.titulo) {
+            <div class="promo-item">
+              <span class="promo-dot">🔥</span>
+              <div>
+                <strong>{{ p.titulo }}</strong>
+                @if (p.descuento) {
+                  <span class="promo-off">{{ p.descuento }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <p class="desc">{{ b.description }}</p>
+
+      @if ((b.servicios && b.servicios.length) || (b.tags && b.tags.length)) {
+        <h2>Qué ofrecen</h2>
+        @if (b.servicios && b.servicios.length) {
+          <ul class="servicios">
+            @for (s of b.servicios; track s) {
+              <li>{{ s }}</li>
+            }
+          </ul>
+        }
+        @if (b.tags && b.tags.length) {
+          <div class="tag-list">
+            @for (t of b.tags; track t) {
+              <span class="tag">{{ t }}</span>
+            }
+          </div>
+        }
+      }
+
+      @if (b.email || b.website || b.instagram || b.facebook) {
+        <h2>Contacto y redes</h2>
+        <div class="social-links">
+          @if (b.email) {
+            <a class="btn social" [href]="'mailto:' + b.email">📧 {{ b.email }}</a>
+          }
+          @if (b.website) {
+            <a class="btn social" [href]="urlOf(b.website)" target="_blank" rel="noopener">🌐 {{ b.website }}</a>
+          }
+          @if (b.instagram) {
+            <a class="btn social" [href]="socialUrl('instagram', b.instagram)" target="_blank" rel="noopener">📷 {{ b.instagram }}</a>
+          }
+          @if (b.facebook) {
+            <a class="btn social" [href]="socialUrl('facebook', b.facebook)" target="_blank" rel="noopener">👍 {{ b.facebook }}</a>
+          }
+        </div>
+      }
+
+      @if (b.delivery || (b.paymentMethods && b.paymentMethods.length)) {
+        <h2>Entrega y pagos</h2>
+        <dl class="info">
+          @if (b.delivery) {
+            <div><dt>Envío a domicilio</dt><dd>{{ deliverySummary() }}</dd></div>
+          }
+          @if (b.paymentMethods && b.paymentMethods.length) {
+            <div><dt>Se acepta</dt><dd>{{ paymentLabel() }}</dd></div>
+          }
+        </dl>
+      }
+
+      <dl class="info">
+        <div><dt>Dirección</dt><dd>{{ b.address }}</dd></div>
+        <div><dt>Teléfono</dt><dd>{{ b.phone }}</dd></div>
+      </dl>
+
+      @if (b.hours && formatHours(b.hours).length > 0) {
+        <h2>Horario</h2>
+        <dl class="info hours">
+          @for (item of formatHours(b.hours); track item[0]) {
+            <div><dt>{{ item[0] }}</dt><dd>{{ item[1] }}</dd></div>
+          }
+        </dl>
+      }
+
+      @if (b.zone) {
+        <h2>Ubicación</h2>
+        <div #map class="map"></div>
+      }
+
+      <div class="actions">
+        <a class="btn wa" [href]="waLink()" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="btn maps" [href]="mapsLink()" target="_blank" rel="noopener">Cómo llegar</a>
+        <a class="btn waze" [href]="wazeLink()" target="_blank" rel="noopener">Waze</a>
+        <a class="btn phone" [href]="phoneLink()">Llamar</a>
+        <button type="button" class="btn share" (click)="share()">Compartir</button>
+        <button
+          type="button"
+          class="btn fav-btn"
+          [class.on]="isFav()"
+          (click)="toggleFav()"
+          [attr.aria-label]="isFav() ? 'Quitar de favoritos' : 'Guardar negocio'"
+        >★ {{ isFav() ? 'Guardado' : 'Guardar' }}</button>
+        <button type="button" class="btn qr" (click)="toggleQr()">{{ showQr() ? 'Ocultar QR' : 'QR para imprimir' }}</button>
+      </div>
+
+      @if (showQr()) {
+        <div class="qr-section">
+          <lm-qr-view [value]="currentUrl()" />
+        </div>
+      }
+    </div>
+  </article>
+
+  <section class="reviews">
+    <h2>
+      Reseñas
+      @if (reviewCount()) {
+        <span class="review-summary">★ {{ reviewAverage() | number: '1.1-1' }} · {{ reviewCount() }} reseñas</span>
+      }
+    </h2>
+
+    @if (reviews().length) {
+      <div class="review-list">
+        @for (r of reviews(); track r._id) {
+          <div class="review">
+            <div class="review-head">
+              <span class="avatar">{{ r.userName.charAt(0) }}</span>
+              <div>
+                <strong>{{ r.userName }}</strong>
+                <div class="stars">
+                  @for (s of stars(r.rating); track s) {
+                    <span>★</span>
+                  }
+                </div>
+              </div>
+              <span class="date">{{ r.createdAt | date: 'd MMM yyyy' }}</span>
+            </div>
+            @if (r.comment) {
+              <p>{{ r.comment }}</p>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="muted">Todavía no hay reseñas. ¡Sé la primera persona en opinar!</p>
+    }
+
+    @if (reviewSent()) {
+      <div class="success">Gracias por tu reseña. Se publicará después de una revisión rápida.</div>
+    } @else {
+      <form class="review-form" (ngSubmit)="submitReview()">
+        <h3>Escribe una reseña</h3>
+        <div class="form-row">
+          <label>
+            Tu nombre
+            <input
+              type="text"
+              placeholder="Ej: María López"
+              [value]="reviewName()"
+              (input)="reviewName.set($any($event.target).value)"
+            />
+          </label>
+          <label>
+            Calificación
+            <select [value]="reviewRating()" (change)="setRating($any($event.target).value)">
+              <option [value]="5">★★★★★ (5)</option>
+              <option [value]="4">★★★★ (4)</option>
+              <option [value]="3">★★★ (3)</option>
+              <option [value]="2">★★ (2)</option>
+              <option [value]="1">★ (1)</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          Tu comentario (opcional)
+          <textarea
+            rows="3"
+            placeholder="Cuéntanos tu experiencia..."
+            [value]="reviewComment()"
+            (input)="reviewComment.set($any($event.target).value)"
+          ></textarea>
+        </label>
+        @if (reviewError()) {
+          <p class="error">{{ reviewError() }}</p>
+        }
+        <button type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Enviando...' : 'Enviar reseña' }}
+        </button>
+      </form>
+    }
+  </section>
+}

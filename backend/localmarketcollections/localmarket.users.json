@@ -1,0 +1,352 @@
+[{
+  "_id": "admin",
+  "__v": 0,
+  "active": true,
+  "businessId": "",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.513Z"
+  },
+  "name": "Administrador LocalMarket",
+  "passwordHash": "$2b$10$5c/663qKrtXAn6dII57MtepQ2W9vWLYsOSOYdsTJPxhJsDY98AEru",
+  "role": "admin",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.562Z"
+  },
+  "username": "admin"
+},
+{
+  "_id": "comedor-mili-san-raymundo",
+  "__v": 0,
+  "active": true,
+  "businessId": "comedor-mili-san-raymundo",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.515Z"
+  },
+  "name": "Comedor Doña Mili",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.565Z"
+  },
+  "username": "comedor-mili-san-raymundo"
+},
+{
+  "_id": "farmacia-san-raymundo",
+  "__v": 0,
+  "active": true,
+  "businessId": "farmacia-san-raymundo",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.517Z"
+  },
+  "name": "Farmacia San Raymundo",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.567Z"
+  },
+  "username": "farmacia-san-raymundo"
+},
+{
+  "_id": "ferreteria-el-constructor",
+  "__v": 0,
+  "active": true,
+  "businessId": "ferreteria-el-constructor",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.518Z"
+  },
+  "name": "Ferretería El Constructor",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.569Z"
+  },
+  "username": "ferreteria-el-constructor"
+},
+{
+  "_id": "taller-don-tono-sr",
+  "__v": 0,
+  "active": true,
+  "businessId": "taller-don-tono-sr",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.519Z"
+  },
+  "name": "Taller Mecánico Don Toño",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.570Z"
+  },
+  "username": "taller-don-tono-sr"
+},
+{
+  "_id": "barberia-el-raymundo",
+  "__v": 0,
+  "active": true,
+  "businessId": "barberia-el-raymundo",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.520Z"
+  },
+  "name": "Barbería El Raymundo",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.571Z"
+  },
+  "username": "barberia-el-raymundo"
+},
+{
+  "_id": "cafe-la-estacion-sjs",
+  "__v": 0,
+  "active": true,
+  "businessId": "cafe-la-estacion-sjs",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.521Z"
+  },
+  "name": "Cafetería La Estación",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.571Z"
+  },
+  "username": "cafe-la-estacion-sjs"
+},
+{
+  "_id": "farmacia-san-juan",
+  "__v": 0,
+  "active": true,
+  "businessId": "farmacia-san-juan",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.521Z"
+  },
+  "name": "Farmacia San Juan",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.572Z"
+  },
+  "username": "farmacia-san-juan"
+},
+{
+  "_id": "panaderia-dona-julia",
+  "__v": 0,
+  "active": true,
+  "businessId": "panaderia-dona-julia",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.522Z"
+  },
+  "name": "Panadería Doña Julia",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.573Z"
+  },
+  "username": "panaderia-dona-julia"
+},
+{
+  "_id": "envios-san-juan",
+  "__v": 0,
+  "active": true,
+  "businessId": "envios-san-juan",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.523Z"
+  },
+  "name": "Envíos y Paquetería San Juan",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.574Z"
+  },
+  "username": "envios-san-juan"
+},
+{
+  "_id": "estetica-flor-de-liz",
+  "__v": 0,
+  "active": true,
+  "businessId": "estetica-flor-de-liz",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.524Z"
+  },
+  "name": "Estética Flor de Liz",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.575Z"
+  },
+  "username": "estetica-flor-de-liz"
+},
+{
+  "_id": "restaurante-la-ceiba",
+  "__v": 0,
+  "active": true,
+  "businessId": "restaurante-la-ceiba",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.524Z"
+  },
+  "name": "Restaurante La Ceiba",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.575Z"
+  },
+  "username": "restaurante-la-ceiba"
+},
+{
+  "_id": "consultorio-medico-vida",
+  "__v": 0,
+  "active": true,
+  "businessId": "consultorio-medico-vida",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.525Z"
+  },
+  "name": "Consultorio Médico Vida",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.576Z"
+  },
+  "username": "consultorio-medico-vida"
+},
+{
+  "_id": "ferreteria-el-vecino",
+  "__v": 0,
+  "active": true,
+  "businessId": "ferreteria-el-vecino",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.526Z"
+  },
+  "name": "Ferretería y Abarrotes El Vecino",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.577Z"
+  },
+  "username": "ferreteria-el-vecino"
+},
+{
+  "_id": "lavanderia-burbuja-ctq",
+  "__v": 0,
+  "active": true,
+  "businessId": "lavanderia-burbuja-ctq",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.527Z"
+  },
+  "name": "Lavandería Burbuja",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.578Z"
+  },
+  "username": "lavanderia-burbuja-ctq"
+},
+{
+  "_id": "techfix-ciudad-quetzal",
+  "__v": 0,
+  "active": true,
+  "businessId": "techfix-ciudad-quetzal",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.528Z"
+  },
+  "name": "TechFix Reparación de Celulares",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.578Z"
+  },
+  "username": "techfix-ciudad-quetzal"
+},
+{
+  "_id": "despacho-juridico-torres",
+  "__v": 0,
+  "active": true,
+  "businessId": "despacho-juridico-torres",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.529Z"
+  },
+  "name": "Despacho Jurídico Torres y Asociados",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.579Z"
+  },
+  "username": "despacho-juridico-torres"
+},
+{
+  "_id": "restaurante-el-faisan",
+  "__v": 0,
+  "active": true,
+  "businessId": "restaurante-el-faisan",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.531Z"
+  },
+  "name": "Restaurante El Faisán",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.581Z"
+  },
+  "username": "restaurante-el-faisan"
+},
+{
+  "_id": "gimnasio-iron-sport",
+  "__v": 0,
+  "active": true,
+  "businessId": "gimnasio-iron-sport",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.532Z"
+  },
+  "name": "Gimnasio Iron Sport",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.581Z"
+  },
+  "username": "gimnasio-iron-sport"
+},
+{
+  "_id": "libreria-el-pensativo",
+  "__v": 0,
+  "active": true,
+  "businessId": "libreria-el-pensativo",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.533Z"
+  },
+  "name": "Librería El Pensativo",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.582Z"
+  },
+  "username": "libreria-el-pensativo"
+},
+{
+  "_id": "clinica-dental-sonrisa",
+  "__v": 0,
+  "active": true,
+  "businessId": "clinica-dental-sonrisa",
+  "createdAt": {
+    "$date": "2026-09-09T18:03:43.534Z"
+  },
+  "name": "Clínica Dental Sonrisa",
+  "passwordHash": "$2b$10$osOxZXHbfjzSBP6e1zwSgenhYcIYD3.H/UBXV27fP7H4ZpUYqlZVy",
+  "role": "owner",
+  "updatedAt": {
+    "$date": "2026-10-04T06:50:40.583Z"
+  },
+  "username": "clinica-dental-sonrisa"
+},
+{
+  "_id": "buffetecaceres",
+  "username": "buffetecaceres",
+  "passwordHash": "$2b$10$3LRFbZ79I9cbK00NC4NDbeo657odxIGaLdUnvMr7kAqs9eiv0AFnG",
+  "role": "owner",
+  "businessId": "buffete-juridico-caceres-muteh2f3",
+  "name": "Buffete Juridico Caceres",
+  "active": true,
+  "createdAt": {
+    "$date": "2026-10-04T05:48:30.394Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-04T05:49:05.390Z"
+  },
+  "__v": 0
+}]
