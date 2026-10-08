@@ -1,12 +1,13 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { AuthService, SessionUser } from '../../services/auth.service';
 import { QrViewComponent } from '../../components/qr-view/qr-view';
 import { listToText, textToList, promosToText, textToPromos } from '../../utils/lists';
 import type { Business } from '../../models/business';
+import type { Category } from '../../models/category';
 
 interface OwnerForm {
   name: string;
@@ -39,6 +40,7 @@ interface OwnerForm {
 }
 
 type Tab = 'datos' | 'horarios' | 'fotos' | 'promo' | 'extras';
+type ViewMode = 'grid' | 'edit';
 
 /** Límite de tamaño por foto (debe coincidir con el del backend). */
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
@@ -70,11 +72,16 @@ function textToHours(text: string): Record<string, string> {
 export class MiNegocioPage implements OnInit {
   private readonly api = inject(ApiService);
   readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   readonly username = signal('');
   readonly password = signal('');
   readonly showPassword = signal(false);
   readonly error = signal('');
+
+  readonly viewMode = signal<ViewMode>('grid');
+  readonly myBusinesses = signal<Business[]>([]);
+  readonly categories = signal<Category[]>([]);
 
   readonly activeTab = signal<Tab>('datos');
   readonly loading = signal(true);
@@ -116,7 +123,13 @@ export class MiNegocioPage implements OnInit {
   });
 
   ngOnInit() {
-    if (this.auth.authed()) this.loadBusiness();
+    this.api.categories().subscribe({
+      next: (cats) => this.categories.set(cats),
+      error: () => {},
+    });
+    if (this.auth.authed()) {
+      this.loadMyBusinesses();
+    }
   }
 
   set<T>(key: keyof OwnerForm, value: T) {
@@ -132,57 +145,70 @@ export class MiNegocioPage implements OnInit {
       next: (r) => {
         this.auth.setSession(r);
         this.error.set('');
-        this.loadBusiness();
+        this.loadMyBusinesses();
       },
       error: () => this.error.set('Credenciales inválidas'),
     });
   }
 
-  private loadBusiness() {
-    const u = this.auth.user();
-    if (!u?.businessId) {
-      this.loading.set(false);
-      return;
-    }
+  loadMyBusinesses() {
     this.loading.set(true);
-    this.api.business(u.businessId, true).subscribe({
-      next: (b) => {
-        this.business.set(b);
-        this.form.set({
-          name: b.name,
-          description: b.description,
-          address: b.address,
-          zone: b.zone ?? '',
-          phone: b.phone,
-          whatsapp: b.whatsapp,
-          latitude: b.latitude,
-          longitude: b.longitude,
-          priceRange: b.priceRange,
-          photosText: (b.photoUrls ?? []).join('\n'),
-          hoursText: hoursToText(b.hours),
-          promoText: b.promoText ?? '',
-          promoStart: b.promoStart ?? '',
-          promoEnd: b.promoEnd ?? '',
-          email: b.email ?? '',
-          website: b.website ?? '',
-          instagram: b.instagram ?? '',
-          facebook: b.facebook ?? '',
-          serviciosText: listToText(b.servicios),
-          tagsText: listToText(b.tags),
-          delivery: b.delivery ?? false,
-          deliveryZonesText: listToText(b.deliveryZones),
-          deliveryFee: b.deliveryFee ?? 0,
-          minOrder: b.minOrder ?? 0,
-          paymentMethodsText: listToText(b.paymentMethods),
-          promosText: promosToText(b.promos),
-        });
+    this.error.set('');
+    this.api.myBusinesses().subscribe({
+      next: (list) => {
+        this.myBusinesses.set(list);
         this.loading.set(false);
       },
-      error: () => {
+      error: (e) => {
         this.loading.set(false);
-        this.error.set('No encontramos tu negocio. Contacta al administrador.');
+        this.error.set(e?.error?.message || 'No pudimos cargar tus negocios.');
       },
     });
+  }
+
+  selectBusiness(b: Business) {
+    this.business.set(b);
+    this.savedMsg.set('');
+    this.error.set('');
+    this.form.set({
+      name: b.name,
+      description: b.description,
+      address: b.address,
+      zone: b.zone ?? '',
+      phone: b.phone,
+      whatsapp: b.whatsapp,
+      latitude: b.latitude,
+      longitude: b.longitude,
+      priceRange: b.priceRange,
+      photosText: (b.photoUrls ?? []).join('\n'),
+      hoursText: hoursToText(b.hours),
+      promoText: b.promoText ?? '',
+      promoStart: b.promoStart ?? '',
+      promoEnd: b.promoEnd ?? '',
+      email: b.email ?? '',
+      website: b.website ?? '',
+      instagram: b.instagram ?? '',
+      facebook: b.facebook ?? '',
+      serviciosText: listToText(b.servicios),
+      tagsText: listToText(b.tags),
+      delivery: b.delivery ?? false,
+      deliveryZonesText: listToText(b.deliveryZones),
+      deliveryFee: b.deliveryFee ?? 0,
+      minOrder: b.minOrder ?? 0,
+      paymentMethodsText: listToText(b.paymentMethods),
+      promosText: promosToText(b.promos),
+    });
+    this.viewMode.set('edit');
+  }
+
+  backToGrid() {
+    this.viewMode.set('grid');
+    this.loadMyBusinesses();
+  }
+
+  getCategoryName(catId: string): string {
+    const cat = this.categories().find((c) => c._id === catId);
+    return cat ? cat.name : 'Negocio';
   }
 
   user(): SessionUser | null {
@@ -215,8 +241,8 @@ export class MiNegocioPage implements OnInit {
   }
 
   private uploadFiles(files: File[]) {
-    const u = this.auth.user();
-    if (!u?.businessId) return;
+    const b = this.business();
+    if (!b?._id) return;
 
     const badFormat = files.filter((f) => !/^image\/(jpeg|png|webp)$/.test(f.type));
     const tooBig = files.filter((f) => f.size > MAX_PHOTO_BYTES);
@@ -248,7 +274,7 @@ export class MiNegocioPage implements OnInit {
     let queue: Promise<void> = Promise.resolve();
     for (const file of files) {
       queue = queue
-        .then(() => firstValueFrom(this.api.uploadPhoto(u.businessId!, file)))
+        .then(() => firstValueFrom(this.api.uploadPhoto(b._id!, file)))
         .then((r) => {
           this.applyPhotoSync(r.business);
           okCount++;
@@ -276,9 +302,9 @@ export class MiNegocioPage implements OnInit {
   }
 
   removePhoto(url: string) {
-    const u = this.auth.user();
-    if (!u?.businessId) return;
-    this.api.removePhoto(u.businessId, url).subscribe({
+    const b = this.business();
+    if (!b?._id) return;
+    this.api.removePhoto(b._id, url).subscribe({
       next: (r) => {
         this.applyPhotoSync(r.business);
         this.savedMsg.set('Foto eliminada.');
@@ -304,8 +330,8 @@ export class MiNegocioPage implements OnInit {
       return;
     }
 
-    const u = this.auth.user();
-    if (!u?.businessId) return;
+    const b = this.business();
+    if (!b?._id) return;
 
     this.saving.set(true);
     this.error.set('');
@@ -340,7 +366,7 @@ export class MiNegocioPage implements OnInit {
       promos: textToPromos(f.promosText),
     };
 
-    this.api.updateBusiness(u.businessId, body).subscribe({
+    this.api.updateBusiness(b._id, body).subscribe({
       next: (updated) => {
         this.saving.set(false);
         this.savedMsg.set('Cambios guardados y visibles en el directorio.');

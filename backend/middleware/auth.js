@@ -56,12 +56,14 @@ authRouter.post('/login', loginValidators(), async (req, res) => {
       { expiresIn: '8h' }
     );
 
+    const bIds = (user.businessIds && user.businessIds.length) ? user.businessIds : (user.businessId ? [user.businessId] : []);
     return res.json({
       token,
       username: user.username,
       email: user.email || undefined,
       role: user.role,
-      businessId: user.businessId || undefined,
+      businessId: user.businessId || (bIds[0] || undefined),
+      businessIds: bIds,
       name: user.name,
     });
   }
@@ -139,6 +141,119 @@ authRouter.post('/register', async (req, res) => {
   } catch (err) {
     console.error('Error al registrar usuario:', err);
     res.status(500).json({ message: 'Error interno del servidor al registrar el usuario' });
+  }
+});
+
+/** Solicitar código de verificación para restablecer contraseña */
+authRouter.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body ?? {};
+    if (!email || !String(email).trim()) {
+      return res.status(400).json({ message: 'Ingresa un correo electrónico o nombre de usuario válido' });
+    }
+
+    const identifier = String(email).trim().toLowerCase();
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { username: identifier }],
+      active: true,
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'No encontramos ninguna cuenta asociada a este correo o usuario' });
+    }
+
+    // Generar código numérico de 6 dígitos aleatorio
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // Válido por 15 minutos
+
+    user.resetPasswordCode = code;
+    user.resetPasswordExpires = expires;
+    await user.save();
+
+    console.log(`[AUTH] Código de verificación generado para ${user.email || user.username}: ${code}`);
+
+    return res.json({
+      message: 'Código de verificación enviado correctamente a tu correo electrónico',
+      email: user.email || user.username,
+      demoCode: code, // Incluido para pruebas en desarrollo
+    });
+  } catch (err) {
+    console.error('Error en forgot-password:', err);
+    return res.status(500).json({ message: 'Error al procesar la solicitud de recuperación' });
+  }
+});
+
+/** Verificar si el código ingresado es válido */
+authRouter.post('/verify-reset-code', async (req, res) => {
+  try {
+    const { email, code } = req.body ?? {};
+    if (!email || !code) {
+      return res.status(400).json({ message: 'Correo electrónico y código son requeridos' });
+    }
+
+    const identifier = String(email).trim().toLowerCase();
+    const cleanCode = String(code).trim();
+
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { username: identifier }],
+      active: true,
+    });
+
+    if (!user || user.resetPasswordCode !== cleanCode) {
+      return res.status(400).json({ message: 'El código de verificación es incorrecto' });
+    }
+
+    if (!user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+      return res.status(400).json({ message: 'El código de verificación ha expirado. Solicita uno nuevo' });
+    }
+
+    return res.json({ message: 'Código verificado exitosamente', valid: true });
+  } catch (err) {
+    console.error('Error en verify-reset-code:', err);
+    return res.status(500).json({ message: 'Error al verificar el código' });
+  }
+});
+
+/** Restablecer la contraseña usando el código verificado */
+authRouter.post('/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body ?? {};
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ message: 'Correo, código y nueva contraseña son obligatorios' });
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ message: 'La nueva contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const identifier = String(email).trim().toLowerCase();
+    const cleanCode = String(code).trim();
+
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { username: identifier }],
+      active: true,
+    });
+
+    if (!user || user.resetPasswordCode !== cleanCode) {
+      return res.status(400).json({ message: 'El código de verificación es incorrecto o no coincide' });
+    }
+
+    if (!user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+      return res.status(400).json({ message: 'El código de verificación ha expirado' });
+    }
+
+    // Actualizar contraseña y limpiar token de recuperación
+    user.passwordHash = await bcrypt.hash(String(newPassword), 10);
+    user.resetPasswordCode = '';
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    console.log(`[AUTH] Contraseña restablecida exitosamente para ${user.username}`);
+
+    return res.json({ message: 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión' });
+  } catch (err) {
+    console.error('Error en reset-password:', err);
+    return res.status(500).json({ message: 'Error al actualizar la contraseña' });
   }
 });
 

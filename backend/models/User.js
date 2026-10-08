@@ -19,8 +19,11 @@ const userSchema = new mongoose.Schema(
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ['admin', 'owner'], default: 'owner' },
     businessId: { type: String, default: '' },
+    businessIds: { type: [String], default: [] },
     name: { type: String, default: '' },
     active: { type: Boolean, default: true },
+    resetPasswordCode: { type: String, default: '' },
+    resetPasswordExpires: { type: Date, default: null },
   },
   { timestamps: true }
 );

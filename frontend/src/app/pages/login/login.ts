@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 
-type Tab = 'login' | 'register';
+type Tab = 'login' | 'register' | 'forgot';
 
 @Component({
   selector: 'lm-login',
@@ -34,10 +34,26 @@ export class LoginPage {
   showLoginPass = false;
   showRegPass = false;
 
+  // Forgot password fields & steps
+  forgotStep = signal<1 | 2 | 3 | 4>(1);
+  forgotEmail = '';
+  forgotCode = '';
+  forgotNewPassword = '';
+  forgotConfirmPassword = '';
+  showForgotPass = false;
+  demoCodeNotice = signal('');
+
   setTab(t: Tab) {
     this.tab.set(t);
     this.error.set('');
     this.success.set('');
+    if (t === 'forgot') {
+      this.forgotStep.set(1);
+      this.forgotCode = '';
+      this.forgotNewPassword = '';
+      this.forgotConfirmPassword = '';
+      this.demoCodeNotice.set('');
+    }
   }
 
   submitLogin() {
@@ -58,7 +74,7 @@ export class LoginPage {
           name: r.name,
           email: (r as any).email,
         });
-        const dest = r.role === 'admin' ? '/admin' : '/registro';
+        const dest = r.role === 'admin' ? '/admin' : '/mi-negocio';
         this.router.navigate([dest]);
       },
       error: (e) => {
@@ -95,12 +111,88 @@ export class LoginPage {
           name: r.user.name,
           email: r.user.email,
         });
-        this.router.navigate(['/registro']);
+        this.router.navigate(['/bienvenido']);
       },
       error: (e) => {
         this.loading.set(false);
         this.error.set(e?.error?.message || 'No se pudo crear la cuenta');
       },
     });
+  }
+
+  // --- Recuperación de contraseña con correo ---
+  submitForgotPasswordRequest() {
+    this.error.set('');
+    this.success.set('');
+    if (!this.forgotEmail.trim()) {
+      this.error.set('Ingresa tu correo electrónico registrado');
+      return;
+    }
+    this.loading.set(true);
+    this.api.forgotPassword(this.forgotEmail.trim()).subscribe({
+      next: (r) => {
+        this.loading.set(false);
+        this.forgotStep.set(2);
+        this.success.set(r.message || 'Código enviado');
+        if (r.demoCode) {
+          this.demoCodeNotice.set(r.demoCode);
+        }
+      },
+      error: (e) => {
+        this.loading.set(false);
+        this.error.set(e?.error?.message || 'No pudimos procesar la solicitud');
+      },
+    });
+  }
+
+  submitVerifyCode() {
+    this.error.set('');
+    this.success.set('');
+    if (!this.forgotCode.trim()) {
+      this.error.set('Ingresa el código de 6 dígitos enviado a tu correo');
+      return;
+    }
+    this.loading.set(true);
+    this.api.verifyResetCode(this.forgotEmail.trim(), this.forgotCode.trim()).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.forgotStep.set(3);
+      },
+      error: (e) => {
+        this.loading.set(false);
+        this.error.set(e?.error?.message || 'Código incorrecto o expirado');
+      },
+    });
+  }
+
+  submitResetPassword() {
+    this.error.set('');
+    this.success.set('');
+    if (this.forgotNewPassword.length < 6) {
+      this.error.set('La nueva contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    if (this.forgotNewPassword !== this.forgotConfirmPassword) {
+      this.error.set('Las contraseñas no coinciden');
+      return;
+    }
+    this.loading.set(true);
+    this.api.resetPassword(this.forgotEmail.trim(), this.forgotCode.trim(), this.forgotNewPassword).subscribe({
+      next: (r) => {
+        this.loading.set(false);
+        this.forgotStep.set(4);
+        this.success.set(r.message || 'Contraseña actualizada correctamente');
+      },
+      error: (e) => {
+        this.loading.set(false);
+        this.error.set(e?.error?.message || 'No se pudo cambiar la contraseña');
+      },
+    });
+  }
+
+  goToLoginAfterReset() {
+    this.loginIdentifier = this.forgotEmail.trim();
+    this.loginPassword = '';
+    this.setTab('login');
   }
 }

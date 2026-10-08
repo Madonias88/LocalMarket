@@ -732,6 +732,10 @@ async function run() {
 
     let owners = 0;
     for (const biz of businesses) {
+      await Business.updateOne(
+        { _id: biz._id },
+        { $set: { ownerUsername: biz._id } }
+      );
       await User.updateOne(
         { _id: biz._id },
         {
@@ -740,6 +744,7 @@ async function run() {
             passwordHash: ownerPasswordHash,
             role: 'owner',
             businessId: biz._id,
+            businessIds: [biz._id],
             name: biz.name,
             active: true,
           },

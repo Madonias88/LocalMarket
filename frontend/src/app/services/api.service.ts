@@ -138,6 +138,37 @@ export class ApiService {
     );
   }
 
+  /** Solicitar envío de código de verificación para cambio de contraseña. */
+  forgotPassword(email: string) {
+    return this.http.post<{ message: string; email: string; demoCode?: string }>(
+      `${API_URL}/auth/forgot-password`,
+      { email }
+    );
+  }
+
+  /** Verificar si el código de 6 dígitos ingresado es válido. */
+  verifyResetCode(email: string, code: string) {
+    return this.http.post<{ message: string; valid: boolean }>(
+      `${API_URL}/auth/verify-reset-code`,
+      { email, code }
+    );
+  }
+
+  /** Cambiar contraseña utilizando el código de verificación verificado. */
+  resetPassword(email: string, code: string, newPassword: string) {
+    return this.http.post<{ message: string }>(
+      `${API_URL}/auth/reset-password`,
+      { email, code, newPassword }
+    );
+  }
+
+  /** Obtener la lista de todos los negocios pertenecientes al usuario autenticado. */
+  myBusinesses() {
+    return this.http.get<Business[]>(`${API_URL}/businesses/my-businesses`, {
+      headers: this.headers(true),
+    });
+  }
+
 
   /** Registro público de un negocio: queda en revisión (pendiente de aprobación). */
   registerBusiness(body: BusinessEditBody) {

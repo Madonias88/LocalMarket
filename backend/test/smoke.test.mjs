@@ -255,4 +255,59 @@ describe('LocalMarket API', () => {
     assert.ok(Array.isArray(json.openingHours) && json.openingHours.length > 0);
     assert.ok(json.openingHours.every((r) => typeof r.dia === 'string' && Boolean(r.dia)));
   });
+
+  // ---- recuperación y cambio de contraseña con verificación de correo ----
+  test('flujo completo de cambio de contraseña con código de verificación por correo', async (t) => {
+    skipIfDown(t);
+    const email = `testreset_${Date.now()}@example.com`;
+    const username = `u_${Date.now()}`;
+    const initialPass = 'initialPassword123';
+    const newPass = 'newSecretPassword456';
+
+    // 1. Registrar usuario
+    const regRes = await api('/auth/register', {
+      method: 'POST',
+      body: { username, email, password: initialPass, name: 'Reset Test User' },
+    });
+    assert.equal(regRes.status, 201);
+
+    // 2. Solicitar código de recuperación
+    const forgotRes = await api('/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+    });
+    assert.equal(forgotRes.status, 200);
+    assert.ok(forgotRes.json.demoCode, 'se debe devolver el código de verificación');
+    const code = forgotRes.json.demoCode;
+
+    // 3. Verificar código de 6 dígitos
+    const verifyRes = await api('/auth/verify-reset-code', {
+      method: 'POST',
+      body: { email, code },
+    });
+    assert.equal(verifyRes.status, 200);
+    assert.equal(verifyRes.json.valid, true);
+
+    // 4. Cambiar contraseña con el código
+    const resetRes = await api('/auth/reset-password', {
+      method: 'POST',
+      body: { email, code, newPassword: newPass },
+    });
+    assert.equal(resetRes.status, 200);
+
+    // 5. Iniciar sesión con la contraseña antigua -> falla (401)
+    const oldLogin = await api('/auth/login', {
+      method: 'POST',
+      body: { username, password: initialPass },
+    });
+    assert.equal(oldLogin.status, 401);
+
+    // 6. Iniciar sesión con la NUEVA contraseña -> éxito (200)
+    const newLogin = await api('/auth/login', {
+      method: 'POST',
+      body: { username, password: newPass },
+    });
+    assert.equal(newLogin.status, 200);
+    assert.ok(newLogin.json.token);
+  });
 });

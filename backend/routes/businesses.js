@@ -76,15 +76,20 @@ function isUploadedUrl(url) {
 /** Verifica que el dueño del negocio es el que pide la operación (o es admin). */
 async function checkOwnerOrAdmin(req, res) {
   if (req.auth.role === 'admin') return true;
-  const owner = await User.findOne({
-    username: req.auth.username,
-    businessId: req.params.id,
-    role: 'owner',
-    active: true,
-  });
-  if (!owner) {
-    res.status(403).json({ message: 'Solo puedes editar tu propio negocio' });
+  const user = await User.findOne({ username: req.auth.username, active: true });
+  if (!user) {
+    res.status(403).json({ message: 'Usuario no encontrado' });
     return false;
+  }
+  const isOwner =
+    user.businessId === req.params.id ||
+    (Array.isArray(user.businessIds) && user.businessIds.includes(req.params.id));
+  if (!isOwner) {
+    const b = await Business.findOne({ _id: req.params.id, ownerUsername: user.username });
+    if (!b) {
+      res.status(403).json({ message: 'Solo puedes editar tus propios negocios' });
+      return false;
+    }
   }
   return true;
 }
@@ -198,6 +203,36 @@ businessesRouter.get('/stats', requireAuth, requireAdmin, async (_req, res) => {
   } catch (err) {
     console.error('Error en /stats:', err);
     res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Negocios vinculados al usuario autenticado (mis negocios)
+businessesRouter.get('/my-businesses', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.auth.username });
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    let filter = {};
+    if (user.role === 'admin') {
+      filter = {};
+    } else {
+      const userBIds = Array.isArray(user.businessIds) ? [...user.businessIds] : [];
+      if (user.businessId && !userBIds.includes(user.businessId)) {
+        userBIds.push(user.businessId);
+      }
+      filter = {
+        $or: [
+          { ownerUsername: user.username },
+          { _id: { $in: userBIds } },
+        ],
+      };
+    }
+
+    const myBusinesses = await Business.find(filter).sort({ createdAt: -1 });
+    res.json(myBusinesses);
+  } catch (err) {
+    console.error('Error al obtener mis negocios:', err);
+    res.status(500).json({ message: 'Error al obtener tus negocios' });
   }
 });
 
@@ -363,17 +398,21 @@ businessesRouter.post('/register', businessValidators, handleValidation, async (
 
     if (sessionUser) {
       // ── Flujo 1: usuario autenticado ───────────────────────────────────────
-      // Si el usuario ya tiene un negocio vinculado, se rechaza.
       const existingUser = await User.findOne({ username: sessionUser.username });
       if (!existingUser) {
         return res.status(404).json({ message: 'Usuario no encontrado' });
       }
-      if (existingUser.businessId) {
-        return res.status(409).json({ message: 'Tu cuenta ya tiene un negocio vinculado' });
-      }
 
+      business.ownerUsername = existingUser.username;
       await business.save();
-      existingUser.businessId = businessId;
+
+      if (!existingUser.businessIds) existingUser.businessIds = [];
+      if (!existingUser.businessIds.includes(businessId)) {
+        existingUser.businessIds.push(businessId);
+      }
+      if (!existingUser.businessId) {
+        existingUser.businessId = businessId;
+      }
       await existingUser.save();
 
       res.status(201).json({
@@ -393,27 +432,38 @@ businessesRouter.post('/register', businessValidators, handleValidation, async (
       if (String(password).length < 6) {
         return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
       }
-      if (await User.findOne({ username: uname })) {
-        return res.status(409).json({ message: 'Ese nombre de usuario ya está en uso, elige otro' });
-      }
 
-      const user = new User({
-        _id: uname,
-        username: uname,
-        passwordHash: bcrypt.hashSync(String(password), 10),
-        role: 'owner',
-        businessId,
-        name: String(name).trim(),
-        active: false, // no puede entrar hasta que su ficha sea aprobada
-      });
+      let user = await User.findOne({ username: uname });
+      business.ownerUsername = uname;
 
-      try {
+      if (user) {
+        // Si el usuario ya existe, vincular el nuevo negocio a su cuenta
         await business.save();
+        if (!user.businessIds) user.businessIds = [];
+        if (!user.businessIds.includes(businessId)) user.businessIds.push(businessId);
+        if (!user.businessId) user.businessId = businessId;
         await user.save();
-      } catch (saveErr) {
-        await business.deleteOne().catch(() => {});
-        await user.deleteOne().catch(() => {});
-        throw saveErr;
+      } else {
+        // Crear usuario nuevo con negocio vinculado
+        user = new User({
+          _id: uname,
+          username: uname,
+          passwordHash: bcrypt.hashSync(String(password), 10),
+          role: 'owner',
+          businessId,
+          businessIds: [businessId],
+          name: String(name).trim(),
+          active: false,
+        });
+
+        try {
+          await business.save();
+          await user.save();
+        } catch (saveErr) {
+          await business.deleteOne().catch(() => {});
+          await user.deleteOne().catch(() => {});
+          throw saveErr;
+        }
       }
 
       res.status(201).json({
@@ -494,18 +544,9 @@ businessesRouter.put('/:id', requireAuth, businessValidators, handleValidation, 
     const business = await Business.findById(req.params.id);
     if (!business) return res.status(404).json({ message: 'Negocio no encontrado' });
 
-    // Owner: debe existir un usuario owner con esa cuenta y ese negocio vinculado
-    if (req.auth.role !== 'admin') {
-      const owner = await User.findOne({
-        username: req.auth.username,
-        businessId: req.params.id,
-        role: 'owner',
-        active: true,
-      });
-      if (!owner) {
-        return res.status(403).json({ message: 'Solo puedes editar tu propio negocio' });
-      }
-    }
+    // Owner: verifica si el usuario es dueño o admin
+    const ok = await checkOwnerOrAdmin(req, res);
+    if (!ok) return;
 
     // Limpia el body segun el rol (evita que un owner cambie rating/featured, etc.)
     const allowed = req.auth.role === 'admin' ? ADMIN_FIELDS : OWNER_FIELDS;

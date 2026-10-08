@@ -3,8 +3,8 @@
     <form class="login-form" (ngSubmit)="login()">
       <div class="login-head">
         <span class="monogram">M</span>
-        <h1>Mi negocio</h1>
-        <p>Gestiona los datos, horarios, fotos y promociones de tu negocio.</p>
+        <h1>Mis negocios</h1>
+        <p>Gestiona los datos, horarios, fotos y promociones de tus negocios.</p>
       </div>
       <label class="field">
         Usuario
@@ -48,23 +48,110 @@
         </p>
       </details>
     </form>
-  } @else if (user()?.role !== 'owner' || !user()?.businessId) {
+  } @else if (user()?.role !== 'owner' && user()?.role !== 'admin') {
     <div class="card notice">
-      <h1>Mi negocio</h1>
+      <h1>Mis negocios</h1>
       <p>Este espacio es para los dueños de negocios.</p>
       <a routerLink="/admin">Ir al panel de administración →</a>
     </div>
   } @else if (loading()) {
-    <p class="muted">Cargando tu negocio...</p>
-  } @else if (business(); as b) {
+    <div class="loading-state">
+      <span class="spinner"></span>
+      <p class="muted">Cargando tus negocios...</p>
+    </div>
+  } @else if (viewMode() === 'grid') {
+    <!-- VISTA DE TARJETAS (MIS NEGOCIOS) -->
     <div class="page-head">
       <div>
-        <h1>{{ b.name }}</h1>
+        <h1>Mis Negocios</h1>
+        <p class="sub">
+          {{ myBusinesses().length }} negocio{{ myBusinesses().length !== 1 ? 's' : '' }} registrado{{ myBusinesses().length !== 1 ? 's' : '' }} en tu cuenta
+        </p>
+      </div>
+      <nav>
+        <a class="btn primary" routerLink="/registro">+ Registrar otro negocio</a>
+        <a class="btn outline" routerLink="/">Ver directorio</a>
+      </nav>
+    </div>
+
+    @if (error()) {
+      <p class="err">{{ error() }}</p>
+    }
+
+    @if (myBusinesses().length === 0) {
+      <div class="empty-businesses-card card">
+        <div class="empty-icon">🏪</div>
+        <h2>Aún no tienes ningún negocio registrado</h2>
+        <p>Registra tu negocio para publicarlo en el directorio y recibir nuevos clientes.</p>
+        <a class="btn primary lg" routerLink="/registro">+ Registrar mi negocio</a>
+      </div>
+    } @else {
+      <div class="cards-grid">
+        @for (b of myBusinesses(); track b._id) {
+          <div class="biz-card card">
+            <div class="biz-card-banner">
+              <img
+                [src]="b.photoUrls?.[0] || 'https://picsum.photos/seed/' + b._id + '/600/400'"
+                [alt]="b.name"
+                loading="lazy"
+              />
+              <div class="biz-card-badges">
+                <span class="badge cat">{{ getCategoryName(b.categoryId) }}</span>
+                @if (b.active) {
+                  <span class="badge active-badge">🟢 Publicado</span>
+                } @else {
+                  <span class="badge pending-badge">🟡 En revisión</span>
+                }
+              </div>
+            </div>
+
+            <div class="biz-card-body">
+              <h3 class="biz-card-title">{{ b.name }}</h3>
+              <p class="biz-card-address">
+                📍 {{ b.address || 'Sin dirección' }}{{ b.zone ? ' · ' + b.zone : '' }}
+              </p>
+              @if (b.description) {
+                <p class="biz-card-desc">{{ b.description }}</p>
+              }
+
+              <div class="biz-card-stats">
+                <span class="stat-pill">⭐ {{ b.rating || 0 }}</span>
+                <span class="stat-pill">👁️ {{ b.viewsCount || 0 }} vistas</span>
+                <span class="stat-pill">💬 {{ b.reviewCount || 0 }} reseñas</span>
+              </div>
+            </div>
+
+            <div class="biz-card-actions">
+              <button type="button" class="btn primary" (click)="selectBusiness(b)">
+                ✏️ Gestionar y Editar
+              </button>
+              <a class="btn outline" [routerLink]="'/negocio/' + b._id" target="_blank">
+                👁️ Ver Ficha Pública
+              </a>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  } @else if (viewMode() === 'edit' && business(); as b) {
+    <!-- VISTA DE EDICIÓN Y DETALLES DEL NEGOCIO SELECCIONADO -->
+    <div class="page-head">
+      <div>
+        <button type="button" class="btn back-btn" (click)="backToGrid()">
+          ← Volver a Mis Negocios
+        </button>
+        <div class="title-wrap">
+          <h1>{{ b.name }}</h1>
+          @if (b.active) {
+            <span class="badge active-badge">🟢 Publicado</span>
+          } @else {
+            <span class="badge pending-badge">🟡 En revisión</span>
+          }
+        </div>
         <p class="sub">Espacio de gestión · los cambios se publican al guardar</p>
       </div>
       <nav>
-        <a class="btn outline" routerLink="/">Ver directorio</a>
-        <a class="btn outline" [routerLink]="previewUrl()">Ver mi ficha</a>
+        <a class="btn outline" [routerLink]="previewUrl()" target="_blank">Ver ficha pública ↗</a>
       </nav>
     </div>
 

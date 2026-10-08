@@ -30,7 +30,7 @@ async function recalcRating(businessId) {
   const average = approved.length
     ? Math.round((approved.reduce((sum, r) => sum + r.rating, 0) / approved.length) * 10) / 10
     : 0;
-  await Business.updateOne({ _id: businessId }, { rating: average });
+  await Business.updateOne({ _id: businessId }, { rating: average, reviewCount: approved.length });
 }
 
 // Resenas aprobadas de un negocio + resumen (publico)

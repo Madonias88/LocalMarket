@@ -15,21 +15,27 @@
 
     <div class="card">
       <!-- Tabs -->
-      <div class="tabs">
-        <button
-          id="tab-login"
-          class="tab"
-          [class.active]="tab() === 'login'"
-          (click)="setTab('login')"
-        >Iniciar sesión</button>
-        <button
-          id="tab-register"
-          class="tab"
-          [class.active]="tab() === 'register'"
-          (click)="setTab('register')"
-        >Crear cuenta</button>
-        <span class="tab-indicator" [class.right]="tab() === 'register'"></span>
-      </div>
+      @if (tab() !== 'forgot') {
+        <div class="tabs">
+          <button
+            id="tab-login"
+            class="tab"
+            [class.active]="tab() === 'login'"
+            (click)="setTab('login')"
+          >Iniciar sesión</button>
+          <button
+            id="tab-register"
+            class="tab"
+            [class.active]="tab() === 'register'"
+            (click)="setTab('register')"
+          >Crear cuenta</button>
+          <span class="tab-indicator" [class.right]="tab() === 'register'"></span>
+        </div>
+      } @else {
+        <div class="tabs single">
+          <button class="tab active" (click)="setTab('login')">← Volver al inicio de sesión</button>
+        </div>
+      }
 
       <!-- ===== LOGIN ===== -->
       @if (tab() === 'login') {
@@ -70,6 +76,9 @@
                 <button type="button" class="toggle-pass" (click)="showLoginPass = !showLoginPass">
                   {{ showLoginPass ? '🙈' : '👁' }}
                 </button>
+              </div>
+              <div class="forgot-link-wrap">
+                <button type="button" class="link-btn text-sm" (click)="setTab('forgot')">¿Olvidaste tu contraseña?</button>
               </div>
             </div>
 
@@ -185,6 +194,171 @@
             ¿Ya tienes cuenta?
             <button class="link-btn" (click)="setTab('login')">Inicia sesión</button>
           </p>
+        </div>
+      }
+
+      <!-- ===== FORGOT PASSWORD ===== -->
+      @if (tab() === 'forgot') {
+        <div class="form-section" id="section-forgot">
+
+          <!-- Paso 1: Solicitar código -->
+          @if (forgotStep() === 1) {
+            <div class="form-header">
+              <h1>Recuperar contraseña</h1>
+              <p>Ingresa tu correo registrado para recibir un código de verificación</p>
+            </div>
+
+            <form (ngSubmit)="submitForgotPasswordRequest()" class="form">
+              <div class="field">
+                <label for="forgot-email">Correo electrónico o usuario</label>
+                <div class="input-wrap">
+                  <span class="input-icon">✉</span>
+                  <input
+                    id="forgot-email"
+                    type="text"
+                    placeholder="tu@correo.com"
+                    autocomplete="email"
+                    [(ngModel)]="forgotEmail"
+                    name="forgotEmail"
+                  />
+                </div>
+              </div>
+
+              @if (error()) {
+                <div class="alert error">⚠ {{ error() }}</div>
+              }
+
+              <button id="btn-forgot-request" type="submit" class="btn-primary" [disabled]="loading()">
+                @if (loading()) {
+                  <span class="spinner"></span> Enviando código...
+                } @else {
+                  Enviar código de verificación →
+                }
+              </button>
+            </form>
+          }
+
+          <!-- Paso 2: Ingresar código de verificación -->
+          @if (forgotStep() === 2) {
+            <div class="form-header">
+              <h1>Verifica tu correo</h1>
+              <p>Ingresa el código de 6 dígitos enviado a <strong>{{ forgotEmail }}</strong></p>
+            </div>
+
+            @if (demoCodeNotice()) {
+              <div class="demo-code-badge">
+                <span class="badge-icon">🔑</span>
+                <span>Código de verificación: <strong>{{ demoCodeNotice() }}</strong></span>
+              </div>
+            }
+
+            <form (ngSubmit)="submitVerifyCode()" class="form">
+              <div class="field">
+                <label for="forgot-code">Código de verificación</label>
+                <div class="input-wrap">
+                  <span class="input-icon">🔢</span>
+                  <input
+                    id="forgot-code"
+                    type="text"
+                    maxlength="6"
+                    placeholder="123456"
+                    style="letter-spacing: 0.25em; font-weight: 700; text-align: center;"
+                    [(ngModel)]="forgotCode"
+                    name="forgotCode"
+                  />
+                </div>
+              </div>
+
+              @if (error()) {
+                <div class="alert error">⚠ {{ error() }}</div>
+              }
+              @if (success()) {
+                <div class="alert success">✅ {{ success() }}</div>
+              }
+
+              <button id="btn-verify-code" type="submit" class="btn-primary" [disabled]="loading()">
+                @if (loading()) {
+                  <span class="spinner"></span> Verificando...
+                } @else {
+                  Verificar código →
+                }
+              </button>
+            </form>
+
+            <p class="switch-hint">
+              ¿No recibiste el código?
+              <button class="link-btn" (click)="submitForgotPasswordRequest()">Reenviar código</button>
+            </p>
+          }
+
+          <!-- Paso 3: Ingresar nueva contraseña -->
+          @if (forgotStep() === 3) {
+            <div class="form-header">
+              <h1>Nueva contraseña</h1>
+              <p>Crea una nueva contraseña para tu cuenta</p>
+            </div>
+
+            <form (ngSubmit)="submitResetPassword()" class="form">
+              <div class="field">
+                <label for="forgot-new-pass">Nueva contraseña</label>
+                <div class="input-wrap">
+                  <span class="input-icon">🔒</span>
+                  <input
+                    id="forgot-new-pass"
+                    [type]="showForgotPass ? 'text' : 'password'"
+                    placeholder="Mínimo 6 caracteres"
+                    autocomplete="new-password"
+                    [(ngModel)]="forgotNewPassword"
+                    name="forgotNewPass"
+                  />
+                  <button type="button" class="toggle-pass" (click)="showForgotPass = !showForgotPass">
+                    {{ showForgotPass ? '🙈' : '👁' }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="forgot-confirm-pass">Confirmar nueva contraseña</label>
+                <div class="input-wrap">
+                  <span class="input-icon">🔑</span>
+                  <input
+                    id="forgot-confirm-pass"
+                    [type]="showForgotPass ? 'text' : 'password'"
+                    placeholder="Repite tu nueva contraseña"
+                    autocomplete="new-password"
+                    [(ngModel)]="forgotConfirmPassword"
+                    name="forgotConfirmPass"
+                  />
+                </div>
+              </div>
+
+              @if (error()) {
+                <div class="alert error">⚠ {{ error() }}</div>
+              }
+
+              <button id="btn-reset-pass" type="submit" class="btn-primary" [disabled]="loading()">
+                @if (loading()) {
+                  <span class="spinner"></span> Guardando contraseña...
+                } @else {
+                  Cambiar contraseña →
+                }
+              </button>
+            </form>
+          }
+
+          <!-- Paso 4: Éxito -->
+          @if (forgotStep() === 4) {
+            <div class="form-header text-center">
+              <div class="success-icon-wrap">🎉</div>
+              <h1>¡Contraseña actualizada!</h1>
+              <p>Tu contraseña se ha restablecido correctamente. Ya puedes acceder con tus nuevas credenciales.</p>
+            </div>
+
+            <button type="button" class="btn-primary" (click)="goToLoginAfterReset()">
+              Iniciar sesión con tu nueva contraseña →
+            </button>
+          }
+
         </div>
       }
     </div>

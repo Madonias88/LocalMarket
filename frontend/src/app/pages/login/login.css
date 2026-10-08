@@ -360,6 +360,64 @@
 
 .link-btn:hover { color: #99f6e4; }
 
+.link-btn.text-sm {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.forgot-link-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.2rem;
+}
+
+.tabs.single {
+  grid-template-columns: 1fr;
+}
+
+.tabs.single .tab {
+  text-align: left;
+  padding-left: 1.5rem;
+  font-size: 0.88rem;
+}
+
+.demo-code-badge {
+  background: rgba(94, 234, 212, 0.12);
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: #99f6e4;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  animation: slideIn 0.3s ease;
+}
+
+.demo-code-badge strong {
+  font-size: 1.1rem;
+  color: #fff;
+  letter-spacing: 0.15em;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+}
+
+.badge-icon {
+  font-size: 1.2rem;
+}
+
+.success-icon-wrap {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  animation: pulse 2s ease-in-out infinite alternate;
+}
+
+.text-center {
+  text-align: center;
+}
+
 /* --- Footer note --- */
 .footer-note {
   color: rgba(255, 255, 255, 0.3);

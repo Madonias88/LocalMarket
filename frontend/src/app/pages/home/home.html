@@ -1,282 +1,269 @@
-<main class="container">
-  <div class="hero">
-    <h1>Encuentra negocios <span class="hero-accent">cerca de ti</span></h1>
-    <p>Descubre restaurantes, tiendas y servicios locales con reseñas, horarios y promociones.</p>
-  </div>
+<main class="corporate-layout">
+  <!-- Hero Search Section -->
+  <section class="corporate-hero">
+    <div class="hero-bg-accent"></div>
+    <div class="hero-content">
+      <h1>Directorio de Negocios</h1>
+      <p>Explora los mejores comercios, servicios y ofertas en tu área local.</p>
+      
+      <div class="search-bar-wrapper">
+        <span class="search-icon">🔍</span>
+        <input
+          type="search"
+          class="main-search-input"
+          placeholder="Buscar por nombre, rubro, o palabras clave..."
+          [value]="query()"
+          (input)="setQuery($any($event.target).value)"
+        />
+        <button type="button" class="btn-search">Buscar</button>
+      </div>
+    </div>
+  </section>
 
-  <div class="controls">
-    <input
-      type="search"
-      placeholder="Buscar por nombre, rubro o dirección..."
-      [value]="query()"
-      (input)="setQuery($any($event.target).value)"
-    />
-    <select
-      [value]="sortBy()"
-      (change)="setSort($any($event.target).value)"
-      class="sort"
-    >
-      <option value="distance">Más cercanos</option>
-      <option value="rating">Mejor calificados</option>
-      <option value="name">Nombre (A-Z)</option>
-    </select>
-    <label class="open-toggle" [class.on]="onlyOpen()">
-      <input type="checkbox" [checked]="onlyOpen()" (change)="setOpen($any($event.target).checked)" />
-      Abierto ahora
-    </label>
-  </div>
-
-  <div class="advanced-bar">
-    <button
-      type="button"
-      class="advanced-toggle"
-      [class.on]="showAdvanced()"
-      (click)="toggleAdvanced()"
-    >
-      ⚙ {{ showAdvanced() ? 'Ocultar filtros avanzados' : 'Filtros avanzados' }}
-      @if (advancedCount() > 0) {
-        <span class="adv-badge">{{ advancedCount() }}</span>
+  <div class="container main-content">
+    
+    <!-- Category Tabs -->
+    <nav class="category-tabs">
+      <button 
+        class="cat-tab" 
+        [class.active]="!selectedCategory()"
+        (click)="clearCategory()"
+      >
+        Todos
+      </button>
+      @for (cat of categories(); track cat._id) {
+        <button 
+          class="cat-tab" 
+          [class.active]="selectedCategory() === cat._id"
+          (click)="toggleCategory(cat._id)"
+        >
+          {{ cat.name }}
+        </button>
       }
-    </button>
-    @if (advancedCount() > 0) {
-      <button type="button" class="reset" (click)="clearAdvanced()">Limpiar filtros</button>
-    }
-  </div>
+    </nav>
 
-  @if (showAdvanced()) {
-    <section class="advanced-panel">
-      <div class="adv-grid">
-        <label class="field">
-          Rating mínimo
-          <select
-            [value]="valueOf(ratingMin())"
-            (change)="setRatingMin($any($event.target).value)"
-          >
-            <option value="">Cualquiera</option>
-            @for (r of ratingOptions; track r) {
-              <option [value]="r">{{ r }}</option>
+    <!-- Toolbar: Dropdowns & Toggles -->
+    <div class="filter-toolbar">
+      <div class="toolbar-left">
+        <!-- Sort Dropdown -->
+        <div class="dropdown-group">
+          <select [value]="sortBy()" (change)="setSort($any($event.target).value)" class="corp-select">
+            <option value="distance">📍 Ordenar: Más cercanos</option>
+            <option value="rating">⭐ Ordenar: Mejor calificados</option>
+            <option value="name">🔤 Ordenar: Alfabético (A-Z)</option>
+          </select>
+        </div>
+        
+        <!-- Zone Dropdown -->
+        <div class="dropdown-group">
+          <select [value]="selectedZone() || ''" (change)="toggleZone($any($event.target).value)" class="corp-select">
+            <option value="">🗺️ Todas las zonas</option>
+            @for (z of zones(); track z) {
+              <option [value]="z">{{ z }}</option>
             }
           </select>
+        </div>
+
+        <label class="corp-toggle">
+          <input type="checkbox" [checked]="onlyOpen()" (change)="setOpen($any($event.target).checked)">
+          <div class="toggle-slider"></div>
+          <span class="toggle-label">Abierto ahora</span>
         </label>
-        <label class="field">
-          Rating máximo
-          <select
-            [value]="valueOf(ratingMax())"
-            (change)="setRatingMax($any($event.target).value)"
-          >
-            <option value="">Cualquiera</option>
-            @for (r of ratingOptions; track r) {
-              <option [value]="r">{{ r }}</option>
-            }
-          </select>
-        </label>
-        <label class="field">
-          Cantidad de fotos
-          <select
-            [value]="valueOf(fotosExactas())"
-            (change)="setFotos($any($event.target).value)"
-          >
-            <option value="">Cualquiera</option>
-            <option value="0">Sin fotos</option>
-            <option value="1">1 foto</option>
-            <option value="2">2 fotos</option>
-          </select>
+        
+        <label class="corp-toggle" [class.disabled]="!hasFavs()">
+          <input type="checkbox" [checked]="onlyFavs()" (change)="setFavs()" [disabled]="!hasFavs()">
+          <div class="toggle-slider"></div>
+          <span class="toggle-label">Mis Favoritos</span>
         </label>
       </div>
 
-      <div class="adv-row">
-        <span class="adv-lbl">Precio</span>
-        @for (p of priceOptions; track p) {
-          <button
-            type="button"
-            class="chip"
-            [class.active]="priceActive(p)"
-            (click)="togglePrice(p)"
-          >
-            {{ p }}
-          </button>
+      <div class="toolbar-right">
+        <button class="btn-advanced" [class.active]="showAdvanced()" (click)="toggleAdvanced()">
+          ⚙️ Filtros Avanzados 
+          @if (advancedCount() > 0) { <span class="adv-count">{{ advancedCount() }}</span> }
+        </button>
+      </div>
+    </div>
+
+    <!-- Advanced Filters Dropdown Panel -->
+    @if (showAdvanced()) {
+      <div class="advanced-panel-corp">
+        <div class="adv-section">
+          <h3>Calificación y Fotos</h3>
+          <div class="adv-grid-3">
+            <label class="corp-field">
+              Rating mínimo
+              <select class="corp-select" [value]="valueOf(ratingMin())" (change)="setRatingMin($any($event.target).value)">
+                <option value="">Cualquiera</option>
+                @for (r of ratingOptions; track r) { <option [value]="r">{{ r }} estrellas o más</option> }
+              </select>
+            </label>
+            <label class="corp-field">
+              Rating máximo
+              <select class="corp-select" [value]="valueOf(ratingMax())" (change)="setRatingMax($any($event.target).value)">
+                <option value="">Cualquiera</option>
+                @for (r of ratingOptions; track r) { <option [value]="r">Hasta {{ r }} estrellas</option> }
+              </select>
+            </label>
+            <label class="corp-field">
+              Cantidad de fotos
+              <select class="corp-select" [value]="valueOf(fotosExactas())" (change)="setFotos($any($event.target).value)">
+                <option value="">Cualquiera</option>
+                <option value="0">Sin fotos</option>
+                <option value="1">1 foto exacta</option>
+                <option value="2">2 fotos exactas</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="adv-divider"></div>
+
+        <div class="adv-section">
+          <h3>Precio y Características</h3>
+          <div class="features-flex">
+            <div class="price-pills">
+              <span class="features-label">Rango de precio:</span>
+              @for (p of priceOptions; track p) {
+                <button type="button" class="price-pill" [class.active]="priceActive(p)" (click)="togglePrice(p)">
+                  {{ p }}
+                </button>
+              }
+            </div>
+            <div class="feature-toggles">
+              <label class="corp-checkbox">
+                <input type="checkbox" [checked]="onlyFeatured()" (change)="toggleFeatured()">
+                <span class="chk-box"></span> Destacados
+              </label>
+              <label class="corp-checkbox">
+                <input type="checkbox" [checked]="onlyVerified()" (change)="toggleVerified()">
+                <span class="chk-box"></span> Verificados
+              </label>
+              <label class="corp-checkbox">
+                <input type="checkbox" [checked]="onlyPromo()" (change)="togglePromo()">
+                <span class="chk-box"></span> Con Promociones
+              </label>
+              <label class="corp-checkbox">
+                <input type="checkbox" [checked]="withPhotos()" (change)="togglePhotos()">
+                <span class="chk-box"></span> Tiene Fotos
+              </label>
+              <label class="corp-checkbox">
+                <input type="checkbox" [checked]="onlyDelivery()" (change)="toggleDelivery()">
+                <span class="chk-box"></span> A domicilio
+              </label>
+            </div>
+          </div>
+        </div>
+
+        @if (advancedCount() > 0) {
+          <div class="adv-footer">
+            <button class="btn-clear-adv" (click)="clearAdvanced()">Limpiar filtros avanzados</button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Results Header -->
+    <div class="results-header">
+      <h2>{{ totalResults() }} negocios encontrados</h2>
+      @if (advancedCount() > 0 || selectedCategory() || selectedZone() || query()) {
+        <button class="btn-clear-all" (click)="clearAdvanced(); clearCategory(); clearZone(); setQuery('');">
+          Restablecer búsqueda
+        </button>
+      }
+    </div>
+
+    <!-- State: Loading -->
+    @if (loading()) {
+      <div class="state-panel">
+        <span class="spinner-large"></span>
+        <p>Buscando negocios...</p>
+      </div>
+    } 
+    <!-- State: Empty -->
+    @else if (visible().length === 0) {
+      <div class="state-panel empty">
+        <span class="empty-icon">🏪</span>
+        <h3>No se encontraron negocios</h3>
+        <p>Intenta ajustar tus filtros o cambiar los términos de búsqueda.</p>
+        <button class="btn-primary" (click)="clearAdvanced(); clearCategory(); clearZone(); setQuery('');">Ver todos los negocios</button>
+      </div>
+    } 
+    <!-- Grid -->
+    @else {
+      <div class="corp-grid">
+        @for (b of visible(); track b._id) {
+          <a class="corp-card" [routerLink]="'/negocio/' + b._id">
+            
+            <div class="card-image-wrapper">
+              <img
+                [src]="b.photoUrls?.[0] || 'https://picsum.photos/seed/' + b._id + '/600/400'"
+                [alt]="b.name"
+                class="card-img"
+                loading="lazy"
+              />
+              <button 
+                type="button" 
+                class="fav-btn" 
+                [class.active]="isFav(b._id)"
+                (click)="$event.preventDefault(); toggleFav(b._id)"
+                title="Guardar en favoritos"
+              >
+                {{ isFav(b._id) ? '♥' : '♡' }}
+              </button>
+              
+              <div class="card-badges-top">
+                @if (b.featured) { <span class="badge featured">⭐ Destacado</span> }
+                @if (hasPromo(b)) { <span class="badge promo">🔥 Oferta</span> }
+              </div>
+            </div>
+
+            <div class="card-content">
+              <div class="card-meta">
+                <span class="category-tag">{{ categoryName(b.categoryId) }}</span>
+                <span class="price-tag">{{ b.priceRange }}</span>
+              </div>
+              
+              <h3 class="card-title">{{ b.name }}
+                @if (b.verified) { <span class="verified-icon" title="Verificado">✓</span> }
+              </h3>
+              
+              <p class="card-address">
+                📍 {{ b.address || 'Sin dirección' }}{{ b.zone ? ' · ' + b.zone : '' }}
+              </p>
+              
+              <div class="card-footer">
+                <div class="rating-wrap">
+                  <span class="star">★</span>
+                  <span class="score">{{ b.rating || '0.0' }}</span>
+                  <span class="reviews">({{ b.reviewCount || 0 }})</span>
+                </div>
+                <div class="status-wrap">
+                  <span class="status-dot" [class.open]="isOpen(b)"></span>
+                  {{ openLabel(b) }}
+                </div>
+                <div class="distance-wrap">
+                  {{ distanceLabel(b) }}
+                </div>
+              </div>
+            </div>
+          </a>
         }
       </div>
 
-      <div class="adv-row">
-        <button
-          type="button"
-          class="chip"
-          [class.active]="onlyFeatured()"
-          (click)="toggleFeatured()"
-        >
-          ★ Destacados
-        </button>
-        <button
-          type="button"
-          class="chip"
-          [class.active]="onlyVerified()"
-          (click)="toggleVerified()"
-        >
-          ✔ Verificados
-        </button>
-        <button
-          type="button"
-          class="chip"
-          [class.active]="onlyPromo()"
-          (click)="togglePromo()"
-        >
-          🔥 Con promoción
-        </button>
-        <button
-          type="button"
-          class="chip"
-          [class.active]="withPhotos()"
-          (click)="togglePhotos()"
-        >
-          📷 Con fotos
-        </button>
-        <button
-          type="button"
-          class="chip"
-          [class.active]="onlyDelivery()"
-          (click)="toggleDelivery()"
-        >
-          🚚 Con envío
-        </button>
-      </div>
-    </section>
-  }
-
-  @if (zones().length > 0) {
-    <div class="chips">
-      <button
-        class="chip"
-        [class.active]="!selectedZone()"
-        (click)="clearZone()"
-      >
-        Todas las zonas
-      </button>
-      @for (zone of zones(); track zone) {
-        <button
-          class="chip"
-          [class.active]="selectedZone() === zone"
-          (click)="toggleZone(zone)"
-        >
-          {{ zone }}
-        </button>
+      <!-- Pagination -->
+      @if (pageCount() > 1) {
+        <div class="corp-pagination">
+          <span class="page-info">Mostrando {{ startIndex() }} - {{ endIndex() }} de {{ totalResults() }}</span>
+          <div class="page-controls">
+            <button [disabled]="page() <= 1" (click)="goToPage(page() - 1)">Anterior</button>
+            @for (p of pages(); track p) {
+              <button [class.active]="p === page()" (click)="goToPage(p)">{{ p }}</button>
+            }
+            <button [disabled]="page() >= pageCount()" (click)="goToPage(page() + 1)">Siguiente</button>
+          </div>
+        </div>
       }
-    </div>
-  }
-
-  @if (hasFavs()) {
-    <div class="chips">
-      <button
-        class="chip"
-        [class.active]="onlyFavs()"
-        (click)="setFavs()"
-      >
-        ★ Mis favoritos
-      </button>
-    </div>
-  }
-
-  <div class="chips">
-    <button
-      class="chip"
-      [class.active]="!selectedCategory()"
-      (click)="clearCategory()"
-    >
-      Todas
-    </button>
-    @for (cat of categories(); track cat._id) {
-      <button
-        class="chip"
-        [class.active]="selectedCategory() === cat._id"
-        (click)="toggleCategory(cat._id)"
-      >
-        {{ cat.name }}
-      </button>
     }
   </div>
-
-  @if (loading()) {
-    <p class="muted">Cargando negocios...</p>
-  } @else if (filtered().length === 0) {
-    <p class="muted">No hay negocios que coincidan con los filtros.</p>
-  } @else {
-    <div class="grid">
-      @for (biz of visible(); track biz._id) {
-        <a class="card" [routerLink]="['/negocio', biz._id]">
-          <div class="thumb-wrap">
-            <img
-              class="thumb"
-              [src]="(biz.photoUrls && biz.photoUrls[0]) || 'https://picsum.photos/seed/default/600/400'"
-              alt="{{ biz.name }}"
-              loading="lazy"
-            />
-            <button
-              type="button"
-              class="fav"
-              [class.on]="isFav(biz._id)"
-              (click)="$event.preventDefault(); $event.stopPropagation(); toggleFav(biz._id)"
-              [attr.aria-label]="isFav(biz._id) ? 'Quitar de favoritos' : 'Guardar negocio'"
-            >★</button>
-          </div>
-          <div class="body">
-            <div class="row">
-              <span class="name">{{ biz.name }}</span>
-              <span class="price">{{ biz.priceRange }}</span>
-            </div>
-            <div class="badges-col">
-              <span class="badge">{{ categoryName(biz.categoryId) }}</span>
-              @if (biz.zone) {
-                <span class="badge zone">{{ biz.zone }}</span>
-              }
-              @if (biz.featured) {
-                <span class="badge feat">★ Destacado</span>
-              }
-              @if (hasPromo(biz)) {
-                <span class="badge promo">🔥 Promo</span>
-              }
-            </div>
-            <p class="desc">{{ biz.description }}</p>
-            <div class="row meta">
-              <span class="rating">★ {{ biz.rating | number: '1.1-1' }}</span>
-              <span class="status" [class.open]="isOpen(biz)">{{ openLabel(biz) }}</span>
-              <span class="distance">{{ distanceLabel(biz) }}</span>
-            </div>
-          </div>
-        </a>
-      }
-    </div>
-
-    <p class="list-meta">
-      Mostrando {{ startIndex() }}–{{ endIndex() }} de {{ totalResults() }}
-      {{ totalResults() === 1 ? 'negocio' : 'negocios' }}
-    </p>
-
-    @if (pageCount() > 1) {
-      <nav class="pager" aria-label="Paginación de resultados">
-        <button
-          class="pg"
-          [disabled]="page() === 1"
-          (click)="goToPage(page() - 1)"
-        >
-          ‹ Anterior
-        </button>
-        @for (p of pages(); track p) {
-          <button
-            class="pg"
-            [class.on]="p === page()"
-            (click)="goToPage(p)"
-          >
-            {{ p }}
-          </button>
-        }
-        <button
-          class="pg"
-          [disabled]="page() === pageCount()"
-          (click)="goToPage(page() + 1)"
-        >
-          Siguiente ›
-        </button>
-      </nav>
-    }
-  }
 </main>

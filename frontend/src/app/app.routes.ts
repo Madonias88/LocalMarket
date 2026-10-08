@@ -7,6 +7,7 @@ import { MiNegocioPage } from './pages/mi-negocio/mi-negocio';
 import { PromosPage } from './pages/promos/promos';
 import { RegistroPage } from './pages/registro/registro';
 import { LoginPage } from './pages/login/login';
+import { BienvenidoPage } from './pages/bienvenido/bienvenido';
 
 export const routes: Routes = [
   { path: '', component: LandingPage },
@@ -17,5 +18,6 @@ export const routes: Routes = [
   { path: 'registro', component: RegistroPage },
   { path: 'admin', component: AdminPage },
   { path: 'mi-negocio', component: MiNegocioPage },
+  { path: 'bienvenido', component: BienvenidoPage },
   { path: '**', redirectTo: '' },
 ];

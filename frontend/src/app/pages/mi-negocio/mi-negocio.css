@@ -616,11 +616,242 @@
   opacity: 0.6;
 }
 
+/* ---- Mis Negocios Cards Grid ---- */
+.title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.back-btn {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.back-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
+}
+
+.btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(15, 118, 110, 0.35);
+}
+
+.btn.primary.lg {
+  padding: 0.8rem 1.6rem;
+  font-size: 0.95rem;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #ccfbf1;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.empty-businesses-card {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.empty-icon {
+  font-size: 3.5rem;
+}
+
+.empty-businesses-card h2 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.empty-businesses-card p {
+  color: var(--muted);
+  max-width: 440px;
+  margin: 0 0 0.5rem;
+  line-height: 1.6;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.4rem;
+  margin-top: 1rem;
+}
+
+.biz-card {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+}
+
+.biz-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+}
+
+.biz-card-banner {
+  position: relative;
+  height: 160px;
+  background: var(--bg);
+}
+
+.biz-card-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.biz-card-badges {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.badge.cat {
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+  backdrop-filter: blur(6px);
+}
+
+.active-badge {
+  background: #10b981;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+.pending-badge {
+  background: #f59e0b;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+.biz-card-body {
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.biz-card-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.biz-card-address {
+  font-size: 0.84rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.biz-card-desc {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0.3rem 0 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.biz-card-stats {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.stat-pill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.biz-card-actions {
+  padding: 1rem 1.2rem;
+  border-top: 1px solid var(--border);
+  background: #fafafa;
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.biz-card-actions .btn {
+  flex: 1;
+  text-align: center;
+  font-size: 0.82rem;
+  padding: 0.55rem 0.6rem;
+}
+
 @media (max-width: 560px) {
   .two {
     grid-template-columns: 1fr;
   }
   .photo-grid {
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  }
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .biz-card-actions {
+    flex-direction: column;
   }
 }
