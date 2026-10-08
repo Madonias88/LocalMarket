@@ -80,6 +80,8 @@ export class MiNegocioPage implements OnInit {
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly uploading = signal(false);
+  readonly uploadingCount = signal(0);
+  readonly uploadProgress = signal(0);
   readonly savedMsg = signal('');
   readonly showQr = signal(false);
 
@@ -197,43 +199,51 @@ export class MiNegocioPage implements OnInit {
     this.form.update((f) => ({ ...f, photosText: (updated.photoUrls ?? []).join('\n') }));
   }
 
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    const files = Array.from(event.dataTransfer?.files ?? []);
+    if (!files.length) return;
+    this.uploadFiles(files);
+  }
+
   onFilesSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
     if (!files.length) return;
+    this.uploadFiles(files);
+    input.value = '';
+  }
 
+  private uploadFiles(files: File[]) {
     const u = this.auth.user();
     if (!u?.businessId) return;
 
-    // Validación rápida en el cliente (mismas reglas que el servidor).
     const badFormat = files.filter((f) => !/^image\/(jpeg|png|webp)$/.test(f.type));
     const tooBig = files.filter((f) => f.size > MAX_PHOTO_BYTES);
     if (badFormat.length) {
       this.error.set('Solo se admiten imágenes JPG, PNG o WebP');
       this.savedMsg.set('');
-      input.value = '';
       return;
     }
     if (tooBig.length) {
-      this.error.set(
-        `La foto "${tooBig[0].name}" supera los 10 MB. Comprime la imagen o elige otra.`
-      );
+      this.error.set(`La foto "${tooBig[0].name}" supera los 10 MB. Comprime la imagen o elige otra.`);
       this.savedMsg.set('');
-      input.value = '';
       return;
     }
     if (files.length > 5) {
       this.error.set('Máximo 5 fotos por carga.');
       this.savedMsg.set('');
-      input.value = '';
       return;
     }
 
     this.uploading.set(true);
+    this.uploadingCount.set(files.length);
+    this.uploadProgress.set(0);
     this.error.set('');
     this.savedMsg.set('');
 
     let okCount = 0;
+    let doneCount = 0;
     const reasons: string[] = [];
     let queue: Promise<void> = Promise.resolve();
     for (const file of files) {
@@ -246,21 +256,21 @@ export class MiNegocioPage implements OnInit {
         .catch((e) => {
           const msg = e?.error?.message;
           if (msg && !reasons.includes(msg)) reasons.push(msg);
+        })
+        .finally(() => {
+          doneCount++;
+          this.uploadProgress.set(Math.round((doneCount / files.length) * 100));
         });
     }
     queue.then(() => {
       this.uploading.set(false);
-      input.value = '';
+      this.uploadProgress.set(0);
       if (reasons.length === 0) {
-        this.savedMsg.set('Fotos subidas y visibles en tu ficha.');
+        this.savedMsg.set(`${okCount} foto${okCount !== 1 ? 's' : ''} subida${okCount !== 1 ? 's' : ''} correctamente.`);
       } else if (okCount === 0) {
         this.error.set(reasons[0] || 'No se pudieron subir las fotos.');
       } else {
-        this.error.set(
-          reasons[0]
-            ? `${reasons[0]} Se subieron ${okCount} de ${files.length}.`
-            : 'Algunas fotos no se subieron.'
-        );
+        this.error.set(reasons[0] ? `${reasons[0]} Se subieron ${okCount} de ${files.length}.` : 'Algunas fotos no se subieron.');
       }
     });
   }

@@ -11,11 +11,15 @@
     >Inicio</a>
     <a routerLink="/negocios" routerLinkActive="active">Negocios</a>
     <a routerLink="/promos" routerLinkActive="active">Promociones</a>
-    <a routerLink="/mi-negocio" routerLinkActive="active">Mi negocio</a>
     @if (auth.authed()) {
+      <a routerLink="/mi-negocio" routerLinkActive="active">Mi negocio</a>
       <button class="btn-logout" (click)="logout()">Salir</button>
+    } @else {
+      <a routerLink="/registro" routerLinkActive="active">Registro</a>
+      <a routerLink="/login" class="btn-login" routerLinkActive="active">Iniciar sesión</a>
     }
   </nav>
+
 </header>
 
 <router-outlet />

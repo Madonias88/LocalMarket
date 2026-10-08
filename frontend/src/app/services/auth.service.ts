@@ -6,6 +6,7 @@ export interface SessionUser {
   role: 'admin' | 'owner';
   businessId?: string;
   name?: string;
+  email?: string;
 }
 
 const TOKEN_KEY = 'lm_admin_token';

@@ -185,43 +185,80 @@
 
       @if (activeTab() === 'fotos') {
         <div class="photos-block">
-          <h2 class="promo-title">Fotos de tu negocio</h2>
-
-          @if (photos().length) {
-            <div class="photo-grid">
-              @for (p of photos(); track p) {
-                <div class="photo-item">
-                  <img [src]="p" alt="Foto de {{ form().name }}" loading="lazy" />
-                  <button
-                    type="button"
-                    class="photo-remove"
-                    (click)="removePhoto(p)"
-                    aria-label="Eliminar foto"
-                  >×</button>
-                  @if ($first) {
-                    <span class="cover">Portada</span>
-                  }
-                </div>
-              }
+          <div class="photos-header">
+            <div>
+              <h2 class="photos-title">📸 Imágenes de tu negocio</h2>
+              <p class="photos-subtitle">La primera imagen se usará como portada en el directorio.</p>
             </div>
-          } @else {
-            <p class="muted">Todavía no tienes fotos. Sube las primeras para que tu ficha luzca mejor.</p>
-          }
+            <span class="photos-count">{{ photos().length }}/10 fotos</span>
+          </div>
 
-          <label class="upload-btn" [class.disabled]="uploading()">
-            {{ uploading() ? 'Subiendo...' : 'Subir fotos' }}
+          <!-- Drag & Drop Zone -->
+          <label
+            class="dropzone"
+            [class.uploading]="uploading()"
+            [class.has-photos]="photos().length > 0"
+            id="photo-dropzone"
+            (dragover)="$event.preventDefault()"
+            (drop)="onDrop($event)"
+          >
             <input
+              id="photo-file-input"
               type="file"
               accept="image/jpeg,image/png,image/webp"
               multiple
               [disabled]="uploading()"
               (change)="onFilesSelected($event)"
             />
+            @if (uploading()) {
+              <div class="dropzone-uploading">
+                <span class="upload-spinner"></span>
+                <p>Subiendo {{ uploadingCount() }} foto{{ uploadingCount() !== 1 ? 's' : '' }}...</p>
+                <div class="upload-progress-bar">
+                  <div class="upload-progress-fill" [style.width.%]="uploadProgress()"></div>
+                </div>
+              </div>
+            } @else {
+              <div class="dropzone-idle">
+                <div class="dropzone-icon">🖼️</div>
+                <p class="dropzone-title">Arrastra tus imágenes aquí</p>
+                <p class="dropzone-sub">o haz clic para seleccionarlas</p>
+                <span class="dropzone-btn">Seleccionar imágenes</span>
+                <p class="dropzone-hint">JPG, PNG o WebP · máx. 10 MB · hasta 5 por carga</p>
+              </div>
+            }
           </label>
-          <p class="hint">
-            JPG, PNG o WebP · hasta 10&nbsp;MB cada una · hasta 5 por carga (10 fotos
-            en total). La primera se usa como portada en el directorio.
-          </p>
+
+          <!-- Photo Grid -->
+          @if (photos().length) {
+            <div class="photo-grid">
+              @for (p of photos(); track p; let i = $index) {
+                <div class="photo-item" [class.is-cover]="i === 0">
+                  <img [src]="p" [alt]="'Foto ' + (i+1) + ' de ' + form().name" loading="lazy" />
+                  <div class="photo-overlay">
+                    <button
+                      type="button"
+                      class="photo-remove"
+                      (click)="removePhoto(p)"
+                      [attr.aria-label]="'Eliminar foto ' + (i+1)"
+                    >
+                      🗑 Eliminar
+                    </button>
+                  </div>
+                  @if (i === 0) {
+                    <span class="cover-badge">⭐ Portada</span>
+                  } @else {
+                    <span class="photo-num">{{ i + 1 }}</span>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="photos-empty">
+              <span>📷</span>
+              <p>Aún no tienes fotos. Súbelas para que tu negocio destaque.</p>
+            </div>
+          }
         </div>
       }
 

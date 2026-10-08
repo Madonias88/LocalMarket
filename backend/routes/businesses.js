@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -311,24 +312,26 @@ businessesRouter.get('/:id', async (req, res) => {
   }
 });
 
-// --- Registro público (sin login) ---
-// El dueño deja su ficha y sus datos de acceso. El negocio queda PENDIENTE
-// (active: false) y la cuenta del dueño inactiva hasta que el admin apruebe.
+// --- Registro público de negocio ---
+// Soporta dos flujos:
+//   1) Usuario ya autenticado (JWT en header): vincula el negocio a su cuenta existente.
+//   2) Flujo legado (sin token): crea usuario + negocio al mismo tiempo con username/password.
+// En ambos casos el negocio queda PENDIENTE (active: false) hasta que el admin apruebe.
 businessesRouter.post('/register', businessValidators, handleValidation, async (req, res) => {
   try {
-    const { name, categoryId, username, password } = req.body;
-    if (!name || !categoryId || !username || !password) {
-      return res.status(400).json({ message: 'Nombre, categoría, usuario y contraseña son obligatorios' });
+    const { name, categoryId } = req.body;
+    if (!name || !categoryId) {
+      return res.status(400).json({ message: 'Nombre y categoría son obligatorios' });
     }
-    const uname = String(username).trim().toLowerCase();
-    if (!/^[a-z0-9._-]{3,30}$/.test(uname)) {
-      return res.status(400).json({ message: 'El usuario debe tener entre 3 y 30 caracteres (letras, números, punto o guión)' });
-    }
-    if (String(password).length < 6) {
-      return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
-    }
-    if (await User.findOne({ username: uname })) {
-      return res.status(409).json({ message: 'Ese nombre de usuario ya está en uso, elige otro' });
+
+    // ── Detectar si viene con token de sesión ───────────────────────────────
+    const header = req.headers.authorization || '';
+    const rawToken = header.startsWith('Bearer ') ? header.slice(7) : null;
+    let sessionUser = null;
+    if (rawToken) {
+      try {
+        sessionUser = jwt.verify(rawToken, process.env.JWT_SECRET || 'localmarket-dev-secret-cambiar-en-produccion');
+      } catch { /* token inválido → flujo legado */ }
     }
 
     const slug =
@@ -349,6 +352,8 @@ businessesRouter.post('/register', businessValidators, handleValidation, async (
       zone: String(req.body.zone || '').trim(),
       phone: String(req.body.phone || '').trim(),
       whatsapp: String(req.body.whatsapp || '').trim(),
+      email: String(req.body.email || '').trim(),
+      website: String(req.body.website || '').trim(),
       latitude: Number(req.body.latitude) || 0,
       longitude: Number(req.body.longitude) || 0,
       priceRange: String(req.body.priceRange || '$').trim() || '$',
@@ -356,30 +361,66 @@ businessesRouter.post('/register', businessValidators, handleValidation, async (
     });
     if (req.body.hours) business.openingHours = structuredHours(req.body.hours);
 
-    const user = new User({
-      _id: uname,
-      username: uname,
-      passwordHash: bcrypt.hashSync(String(password), 10),
-      role: 'owner',
-      businessId,
-      name: String(name).trim(),
-      active: false, // no puede entrar hasta que su ficha sea aprobada
-    });
+    if (sessionUser) {
+      // ── Flujo 1: usuario autenticado ───────────────────────────────────────
+      // Si el usuario ya tiene un negocio vinculado, se rechaza.
+      const existingUser = await User.findOne({ username: sessionUser.username });
+      if (!existingUser) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      if (existingUser.businessId) {
+        return res.status(409).json({ message: 'Tu cuenta ya tiene un negocio vinculado' });
+      }
 
-    try {
       await business.save();
-      await user.save();
-    } catch (saveErr) {
-      // Evita dejar un negocio huérfano si falla la segunda escritura.
-      await business.deleteOne().catch(() => {});
-      await user.deleteOne().catch(() => {});
-      throw saveErr;
-    }
+      existingUser.businessId = businessId;
+      await existingUser.save();
 
-    res.status(201).json({
-      message: 'Registro recibido. Un administrador revisará tu ficha y la publicará en breve.',
-      business,
-    });
+      res.status(201).json({
+        message: 'Registro recibido. Un administrador revisará tu ficha y la publicará en breve.',
+        business,
+      });
+    } else {
+      // ── Flujo 2: legado sin token (username + password en el body) ─────────
+      const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Inicia sesión o proporciona usuario y contraseña para registrar tu negocio' });
+      }
+      const uname = String(username).trim().toLowerCase();
+      if (!/^[a-z0-9._-]{3,30}$/.test(uname)) {
+        return res.status(400).json({ message: 'El usuario debe tener entre 3 y 30 caracteres (letras, números, punto o guión)' });
+      }
+      if (String(password).length < 6) {
+        return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
+      }
+      if (await User.findOne({ username: uname })) {
+        return res.status(409).json({ message: 'Ese nombre de usuario ya está en uso, elige otro' });
+      }
+
+      const user = new User({
+        _id: uname,
+        username: uname,
+        passwordHash: bcrypt.hashSync(String(password), 10),
+        role: 'owner',
+        businessId,
+        name: String(name).trim(),
+        active: false, // no puede entrar hasta que su ficha sea aprobada
+      });
+
+      try {
+        await business.save();
+        await user.save();
+      } catch (saveErr) {
+        await business.deleteOne().catch(() => {});
+        await user.deleteOne().catch(() => {});
+        throw saveErr;
+      }
+
+      res.status(201).json({
+        message: 'Registro recibido. Un administrador revisará tu ficha y la publicará en breve.',
+        business,
+      });
+    }
   } catch (err) {
     console.error('Error al registrar negocio:', err);
     res.status(400).json({ message: 'No se pudo registrar el negocio' });

@@ -130,13 +130,24 @@ export class ApiService {
     });
   }
 
+  /** Registro de cuenta nueva con correo electrónico. */
+  registerUser(body: { username: string; email: string; password: string; name: string }) {
+    return this.http.post<{ message: string; token: string; user: { id: string; username: string; email: string; name: string; role: 'admin' | 'owner' } }>(
+      `${API_URL}/auth/register`,
+      body
+    );
+  }
+
+
   /** Registro público de un negocio: queda en revisión (pendiente de aprobación). */
   registerBusiness(body: BusinessEditBody) {
     return this.http.post<{ message: string; business: Business }>(
       `${API_URL}/businesses/register`,
-      body
+      body,
+      { headers: this.headers(true) }  // envía el token para el flujo autenticado
     );
   }
+
 
   /** Aprobar una solicitud pendiente: publica el negocio y habilita al dueño. */
   approveBusiness(id: string) {

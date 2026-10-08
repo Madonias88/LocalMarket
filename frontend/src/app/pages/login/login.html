@@ -1,0 +1,197 @@
+<main class="auth-page">
+  <!-- Background decoration -->
+  <div class="bg-decoration">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div class="auth-container">
+    <!-- Brand -->
+    <a routerLink="/" class="brand">
+      <span class="brand-mark">LM</span>
+      <span class="brand-text">Local<strong>Market</strong></span>
+    </a>
+
+    <div class="card">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button
+          id="tab-login"
+          class="tab"
+          [class.active]="tab() === 'login'"
+          (click)="setTab('login')"
+        >Iniciar sesión</button>
+        <button
+          id="tab-register"
+          class="tab"
+          [class.active]="tab() === 'register'"
+          (click)="setTab('register')"
+        >Crear cuenta</button>
+        <span class="tab-indicator" [class.right]="tab() === 'register'"></span>
+      </div>
+
+      <!-- ===== LOGIN ===== -->
+      @if (tab() === 'login') {
+        <div class="form-section" id="section-login">
+          <div class="form-header">
+            <h1>¡Bienvenido de vuelta!</h1>
+            <p>Ingresa con tu correo o usuario</p>
+          </div>
+
+          <form (ngSubmit)="submitLogin()" class="form">
+            <div class="field">
+              <label for="login-id">Correo o usuario</label>
+              <div class="input-wrap">
+                <span class="input-icon">✉</span>
+                <input
+                  id="login-id"
+                  type="text"
+                  placeholder="tu@correo.com"
+                  autocomplete="username"
+                  [(ngModel)]="loginIdentifier"
+                  name="identifier"
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="login-pass">Contraseña</label>
+              <div class="input-wrap">
+                <span class="input-icon">🔒</span>
+                <input
+                  id="login-pass"
+                  [type]="showLoginPass ? 'text' : 'password'"
+                  placeholder="••••••••"
+                  autocomplete="current-password"
+                  [(ngModel)]="loginPassword"
+                  name="password"
+                />
+                <button type="button" class="toggle-pass" (click)="showLoginPass = !showLoginPass">
+                  {{ showLoginPass ? '🙈' : '👁' }}
+                </button>
+              </div>
+            </div>
+
+            @if (error()) {
+              <div class="alert error">⚠ {{ error() }}</div>
+            }
+
+            <button id="btn-login" type="submit" class="btn-primary" [disabled]="loading()">
+              @if (loading()) {
+                <span class="spinner"></span> Ingresando...
+              } @else {
+                Iniciar sesión →
+              }
+            </button>
+          </form>
+
+          <p class="switch-hint">
+            ¿Aún no tienes cuenta?
+            <button class="link-btn" (click)="setTab('register')">Regístrate gratis</button>
+          </p>
+        </div>
+      }
+
+      <!-- ===== REGISTER ===== -->
+      @if (tab() === 'register') {
+        <div class="form-section" id="section-register">
+          <div class="form-header">
+            <h1>Crea tu cuenta</h1>
+            <p>Regístrate para publicar tu negocio</p>
+          </div>
+
+          <form (ngSubmit)="submitRegister()" class="form">
+            <div class="field">
+              <label for="reg-name">Nombre completo</label>
+              <div class="input-wrap">
+                <span class="input-icon">👤</span>
+                <input
+                  id="reg-name"
+                  type="text"
+                  placeholder="Ana García"
+                  autocomplete="name"
+                  [(ngModel)]="regName"
+                  name="name"
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="reg-email">Correo electrónico</label>
+              <div class="input-wrap">
+                <span class="input-icon">✉</span>
+                <input
+                  id="reg-email"
+                  type="email"
+                  placeholder="tu@correo.com"
+                  autocomplete="email"
+                  [(ngModel)]="regEmail"
+                  name="email"
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="reg-pass">Contraseña</label>
+              <div class="input-wrap">
+                <span class="input-icon">🔒</span>
+                <input
+                  id="reg-pass"
+                  [type]="showRegPass ? 'text' : 'password'"
+                  placeholder="Mínimo 6 caracteres"
+                  autocomplete="new-password"
+                  [(ngModel)]="regPassword"
+                  name="password"
+                />
+                <button type="button" class="toggle-pass" (click)="showRegPass = !showRegPass">
+                  {{ showRegPass ? '🙈' : '👁' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="reg-pass2">Confirmar contraseña</label>
+              <div class="input-wrap">
+                <span class="input-icon">🔑</span>
+                <input
+                  id="reg-pass2"
+                  [type]="showRegPass ? 'text' : 'password'"
+                  placeholder="Repite tu contraseña"
+                  autocomplete="new-password"
+                  [(ngModel)]="regPasswordConfirm"
+                  name="password2"
+                />
+              </div>
+            </div>
+
+            @if (error()) {
+              <div class="alert error">⚠ {{ error() }}</div>
+            }
+            @if (success()) {
+              <div class="alert success">✅ {{ success() }}</div>
+            }
+
+            <button id="btn-register" type="submit" class="btn-primary" [disabled]="loading()">
+              @if (loading()) {
+                <span class="spinner"></span> Creando cuenta...
+              } @else {
+                Crear cuenta gratis →
+              }
+            </button>
+          </form>
+
+          <p class="switch-hint">
+            ¿Ya tienes cuenta?
+            <button class="link-btn" (click)="setTab('login')">Inicia sesión</button>
+          </p>
+        </div>
+      }
+    </div>
+
+    <p class="footer-note">
+      Al registrarte aceptas nuestros <a href="#">Términos de uso</a> y
+      <a href="#">Política de privacidad</a>
+    </p>
+  </div>
+</main>

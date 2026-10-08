@@ -1,156 +1,386 @@
-<main class="container">
-  <div class="head">
-    <span class="eyebrow">✦ Registro gratuito</span>
-    <h1>Dale presencia digital a tu negocio</h1>
-    <p class="sub">
-      Completa tus datos y tu ficha quedará en revisión. En cuanto el equipo de
-      LocalMarket la apruebe, se publicará en el directorio y podrás gestionarla
-      desde "Mi negocio" con el usuario y contraseña que elijas.
-    </p>
-  </div>
+<main class="registro-page">
 
+  <!-- ===== ÉXITO ===== -->
   @if (done()) {
-    <div class="card done">
-      <span class="done-icon">✅</span>
-      <h2>¡Registro recibido!</h2>
-      <p>{{ done() }}</p>
-      <div class="actions">
-        <a class="btn" routerLink="/negocios">Ver directorio</a>
-        <a class="btn ghost" routerLink="/">Volver al inicio</a>
+    <div class="success-screen">
+      <div class="success-card">
+        <div class="success-icon-wrap">
+          <span class="success-icon">🎉</span>
+        </div>
+        <h2>¡Solicitud enviada!</h2>
+        <p>{{ done() }}</p>
+        <p class="success-note">
+          En cuanto nuestro equipo apruebe tu negocio, podrás gestionarlo
+          desde <strong>Mi negocio</strong> con tu cuenta.
+        </p>
+        <div class="success-actions">
+          <a class="btn-primary" routerLink="/negocios">Ver directorio</a>
+          <a class="btn-ghost" routerLink="/">Volver al inicio</a>
+        </div>
       </div>
     </div>
+
   } @else {
-    <form class="card form" (ngSubmit)="submit()">
-      <div class="grid">
-        <label>
-          Nombre del negocio *
-          <input
-            type="text"
-            placeholder="Ej. Panadería La Espiga"
-            [value]="form().name"
-            (input)="set('name', $any($event.target).value)"
-          />
-        </label>
-        <label>
-          Categoría *
-          <select
-            [value]="form().categoryId"
-            (change)="set('categoryId', $any($event.target).value)"
-          >
-            <option value="" disabled>Selecciona una categoría</option>
-            @for (c of categories(); track c._id) {
-              <option [value]="c._id">{{ c.name }}</option>
+
+    <!-- ===== HEADER ===== -->
+    <div class="page-hero">
+      <div class="hero-bg">
+        <div class="hero-blob b1"></div>
+        <div class="hero-blob b2"></div>
+      </div>
+      <div class="hero-content">
+        <span class="eyebrow">✦ Registro gratuito</span>
+        <h1>Dale presencia digital<br>a tu negocio</h1>
+        <p>Tu ficha quedará en revisión y se publicará cuando sea aprobada.</p>
+
+        <!-- Auth guard notice -->
+        @if (!auth.authed()) {
+          <div class="auth-notice">
+            <span>🔐</span>
+            <span>Necesitas una cuenta para registrar tu negocio.</span>
+            <a routerLink="/login" class="btn-notice">Iniciar sesión / Registrarse</a>
+          </div>
+        } @else {
+          <div class="auth-welcome">
+            👋 Hola, <strong>{{ auth.user()?.name || auth.user()?.username }}</strong>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ===== STEPPER ===== -->
+    @if (auth.authed()) {
+      <div class="stepper-wrap">
+        <!-- Progress bar -->
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="progress()"></div>
+        </div>
+
+        <!-- Step indicators -->
+        <div class="steps">
+          @for (s of steps; track $index) {
+            <button
+              class="step-btn"
+              [class.active]="step() === $index"
+              [class.done]="step() > $index"
+              (click)="goToStep($index)"
+            >
+              <span class="step-icon">
+                @if (step() > $index) { ✓ } @else { {{ s.icon }} }
+              </span>
+              <span class="step-label">{{ s.label }}</span>
+            </button>
+          }
+        </div>
+
+        <!-- ===== FORM CARD ===== -->
+        <div class="form-card">
+
+          <!-- STEP 0: Información del negocio -->
+          @if (step() === 0) {
+            <div class="step-section" id="step-business">
+              <div class="step-header">
+                <h2>🏪 Información del negocio</h2>
+                <p>Cuéntanos sobre tu negocio para que los clientes te encuentren.</p>
+              </div>
+              <div class="fields-grid">
+                <div class="field full">
+                  <label for="biz-name">Nombre del negocio *</label>
+                  <input
+                    id="biz-name"
+                    type="text"
+                    placeholder="Ej. Panadería La Espiga"
+                    [value]="form().name"
+                    (input)="set('name', $any($event.target).value)"
+                  />
+                </div>
+                <div class="field">
+                  <label for="biz-category">Categoría *</label>
+                  <select
+                    id="biz-category"
+                    [value]="form().categoryId"
+                    (change)="set('categoryId', $any($event.target).value)"
+                  >
+                    <option value="" disabled>Selecciona una categoría</option>
+                    @for (c of categories(); track c._id) {
+                      <option [value]="c._id">{{ c.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="biz-price">Rango de precio</label>
+                  <select
+                    id="biz-price"
+                    [value]="form().priceRange"
+                    (change)="set('priceRange', $any($event.target).value)"
+                  >
+                    <option value="$">$ — Económico</option>
+                    <option value="$$">$$ — Moderado</option>
+                    <option value="$$$">$$$ — Premium</option>
+                  </select>
+                </div>
+                <div class="field full">
+                  <label for="biz-desc">Descripción</label>
+                  <textarea
+                    id="biz-desc"
+                    rows="4"
+                    placeholder="¿Qué ofreces? Cuéntale a tus clientes qué hace especial a tu negocio..."
+                    [value]="form().description"
+                    (input)="set('description', $any($event.target).value)"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- STEP 1: Ubicación -->
+          @if (step() === 1) {
+            <div class="step-section" id="step-location">
+              <div class="step-header">
+                <h2>📍 Ubicación</h2>
+                <p>¿Dónde están tus clientes? Añade tu dirección para aparecer en búsquedas locales.</p>
+              </div>
+              <div class="fields-grid">
+                <div class="field full">
+                  <label for="biz-address">Dirección</label>
+                  <input
+                    id="biz-address"
+                    type="text"
+                    placeholder="Ej. 3a. Calle 4-12, zona 1"
+                    [value]="form().address"
+                    (input)="set('address', $any($event.target).value)"
+                  />
+                </div>
+                <div class="field full">
+                  <label for="biz-zone">Zona / Municipio</label>
+                  <input
+                    id="biz-zone"
+                    type="text"
+                    placeholder="Ej. San Raymundo, San Juan Sacatepéquez"
+                    [value]="form().zone"
+                    (input)="set('zone', $any($event.target).value)"
+                  />
+                </div>
+                <div class="field">
+                  <label for="biz-lat">
+                    Latitud <span class="optional">(opcional)</span>
+                  </label>
+                  <input
+                    id="biz-lat"
+                    type="number"
+                    step="any"
+                    placeholder="14.7646"
+                    [value]="form().latitude"
+                    (input)="set('latitude', $any($event.target).value)"
+                  />
+                </div>
+                <div class="field">
+                  <label for="biz-lng">
+                    Longitud <span class="optional">(opcional)</span>
+                  </label>
+                  <input
+                    id="biz-lng"
+                    type="number"
+                    step="any"
+                    placeholder="-90.5949"
+                    [value]="form().longitude"
+                    (input)="set('longitude', $any($event.target).value)"
+                  />
+                </div>
+                <div class="field-info full">
+                  <span>💡</span>
+                  <p>Puedes obtener las coordenadas haciendo clic derecho en Google Maps → "¿Qué hay aquí?"</p>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- STEP 2: Contacto -->
+          @if (step() === 2) {
+            <div class="step-section" id="step-contact">
+              <div class="step-header">
+                <h2>📞 Información de contacto</h2>
+                <p>¿Cómo pueden contactarte tus clientes?</p>
+              </div>
+              <div class="fields-grid">
+                <div class="field">
+                  <label for="biz-phone">Teléfono</label>
+                  <div class="input-prefix-wrap">
+                    <span class="input-prefix">📞</span>
+                    <input
+                      id="biz-phone"
+                      type="tel"
+                      placeholder="+502 5555 0000"
+                      [value]="form().phone"
+                      (input)="set('phone', $any($event.target).value)"
+                    />
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="biz-wa">WhatsApp</label>
+                  <div class="input-prefix-wrap">
+                    <span class="input-prefix">💬</span>
+                    <input
+                      id="biz-wa"
+                      type="tel"
+                      placeholder="502 5555 0000"
+                      [value]="form().whatsapp"
+                      (input)="set('whatsapp', $any($event.target).value)"
+                    />
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="biz-email">
+                    Correo del negocio <span class="optional">(opcional)</span>
+                  </label>
+                  <div class="input-prefix-wrap">
+                    <span class="input-prefix">✉</span>
+                    <input
+                      id="biz-email"
+                      type="email"
+                      placeholder="negocio@correo.com"
+                      [value]="form().email"
+                      (input)="set('email', $any($event.target).value)"
+                    />
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="biz-web">
+                    Sitio web <span class="optional">(opcional)</span>
+                  </label>
+                  <div class="input-prefix-wrap">
+                    <span class="input-prefix">🌐</span>
+                    <input
+                      id="biz-web"
+                      type="url"
+                      placeholder="https://minegocio.com"
+                      [value]="form().website"
+                      (input)="set('website', $any($event.target).value)"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- STEP 3: Confirmación -->
+          @if (step() === 3) {
+            <div class="step-section" id="step-confirm">
+              <div class="step-header">
+                <h2>✅ Confirma tu solicitud</h2>
+                <p>Revisa los datos antes de enviar. Podrás editarlos después de ser aprobado.</p>
+              </div>
+
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <span class="s-label">Negocio</span>
+                  <span class="s-value">{{ form().name || '—' }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="s-label">Categoría</span>
+                  <span class="s-value">{{ categoryName }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="s-label">Precio</span>
+                  <span class="s-value price-badge">{{ form().priceRange }}</span>
+                </div>
+                <div class="summary-item full">
+                  <span class="s-label">Descripción</span>
+                  <span class="s-value muted">{{ form().description || 'Sin descripción' }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="s-label">Dirección</span>
+                  <span class="s-value">{{ form().address || '—' }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="s-label">Zona</span>
+                  <span class="s-value">{{ form().zone || '—' }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="s-label">Teléfono</span>
+                  <span class="s-value">{{ form().phone || '—' }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="s-label">WhatsApp</span>
+                  <span class="s-value">{{ form().whatsapp || '—' }}</span>
+                </div>
+                @if (form().email) {
+                  <div class="summary-item">
+                    <span class="s-label">Correo</span>
+                    <span class="s-value">{{ form().email }}</span>
+                  </div>
+                }
+                @if (form().website) {
+                  <div class="summary-item">
+                    <span class="s-label">Web</span>
+                    <span class="s-value">{{ form().website }}</span>
+                  </div>
+                }
+              </div>
+
+              <div class="confirm-notice">
+                <span>ℹ️</span>
+                <p>
+                  Tu negocio quedará en estado <strong>pendiente de aprobación</strong>.
+                  El equipo de LocalMarket lo revisará y recibirás una notificación.
+                </p>
+              </div>
+            </div>
+          }
+
+          <!-- Error alert -->
+          @if (error()) {
+            <div class="alert-error">⚠ {{ error() }}</div>
+          }
+
+          <!-- Navigation buttons -->
+          <div class="nav-btns">
+            @if (step() > 0) {
+              <button class="btn-back" (click)="prevStep()">← Anterior</button>
+            } @else {
+              <span></span>
             }
-          </select>
-        </label>
-        <label class="full">
-          Descripción
-          <textarea
-            rows="3"
-            placeholder="¿Qué ofreces? Cuéntale a tus clientes."
-            [value]="form().description"
-            (input)="set('description', $any($event.target).value)"
-          ></textarea>
-        </label>
-        <label>
-          Dirección
-          <input
-            type="text"
-            placeholder="Ej. 3a. Calle 4-12, zona 1"
-            [value]="form().address"
-            (input)="set('address', $any($event.target).value)"
-          />
-        </label>
-        <label>
-          Zona / municipio
-          <input
-            type="text"
-            placeholder="Ej. San Raymundo"
-            [value]="form().zone"
-            (input)="set('zone', $any($event.target).value)"
-          />
-        </label>
-        <label>
-          Teléfono
-          <input
-            type="tel"
-            placeholder="+502 5555 0000"
-            [value]="form().phone"
-            (input)="set('phone', $any($event.target).value)"
-          />
-        </label>
-        <label>
-          WhatsApp
-          <input
-            type="tel"
-            placeholder="502 5555 0000"
-            [value]="form().whatsapp"
-            (input)="set('whatsapp', $any($event.target).value)"
-          />
-        </label>
-        <label>
-          Latitud (opcional)
-          <input
-            type="number"
-            step="any"
-            placeholder="14.7646"
-            [value]="form().latitude"
-            (input)="set('latitude', $any($event.target).value)"
-          />
-        </label>
-        <label>
-          Longitud (opcional)
-          <input
-            type="number"
-            step="any"
-            placeholder="-90.5949"
-            [value]="form().longitude"
-            (input)="set('longitude', $any($event.target).value)"
-          />
-        </label>
-        <label>
-          Rango de precio
-          <select [value]="form().priceRange" (change)="set('priceRange', $any($event.target).value)">
-            <option>$</option>
-            <option>$$</option>
-            <option>$$$</option>
-          </select>
-        </label>
-        <label class="full">
-          Usuario para tu cuenta * <span class="hint">con este usuario entrarás a "Mi negocio"</span>
-          <input
-            type="text"
-            autocomplete="username"
-            placeholder="Ej. panaderia-la-espiga"
-            [value]="form().username"
-            (input)="set('username', $any($event.target).value)"
-          />
-        </label>
-        <label class="full">
-          Contraseña * <span class="hint">mínimo 6 caracteres</span>
-          <input
-            type="password"
-            autocomplete="new-password"
-            placeholder="••••••••"
-            [value]="form().password"
-            (input)="set('password', $any($event.target).value)"
-          />
-        </label>
+
+            @if (step() < steps.length - 1) {
+              <button id="btn-next" class="btn-next" (click)="nextStep()">
+                Siguiente →
+              </button>
+            } @else {
+              <button
+                id="btn-submit"
+                class="btn-submit"
+                (click)="submit()"
+                [disabled]="sending()"
+              >
+                @if (sending()) {
+                  <span class="spinner"></span> Enviando...
+                } @else {
+                  🚀 Enviar solicitud
+                }
+              </button>
+            }
+          </div>
+        </div>
       </div>
 
-      @if (error()) {
-        <p class="err">{{ error() }}</p>
-      }
-
-      <div class="actions">
-        <button type="submit" class="btn" [disabled]="sending()">
-          {{ sending() ? 'Enviando...' : 'Solicitar registro' }}
-        </button>
-        <p class="note">
-          Tu negocio no se publicará hasta que un administrador apruebe tu
-          solicitud. Cuando eso pase, entrarás con tu usuario en "Mi negocio".
-        </p>
+    } @else {
+      <!-- NOT AUTHENTICATED: call to action -->
+      <div class="cta-section">
+        <div class="cta-card">
+          <span class="cta-icon">🔐</span>
+          <h2>Inicia sesión para continuar</h2>
+          <p>
+            Crea una cuenta gratuita o inicia sesión para registrar
+            tu negocio en LocalMarket.
+          </p>
+          <div class="cta-actions">
+            <a id="cta-login" class="btn-primary" routerLink="/login">
+              Iniciar sesión / Registrarse
+            </a>
+            <a class="btn-ghost" routerLink="/negocios">Ver directorio</a>
+          </div>
+        </div>
       </div>
-    </form>
+    }
   }
 </main>
