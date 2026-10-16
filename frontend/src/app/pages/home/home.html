@@ -14,8 +14,26 @@
           placeholder="Buscar por nombre, rubro, o palabras clave..."
           [value]="query()"
           (input)="setQuery($any($event.target).value)"
+          (focus)="showPredictive.set(true)"
+          (blur)="hidePredictive()"
         />
         <button type="button" class="btn-search">Buscar</button>
+
+        @if (showPredictive() && query().trim().length > 0 && filtered().length > 0) {
+          <div class="predictive-dropdown">
+            @for (b of visiblePredictive(); track b._id) {
+              <a [routerLink]="'/negocio/' + b._id" class="predictive-item">
+                <div class="predictive-img-wrap">
+                  <img [src]="b.photoUrls?.[0] || 'https://picsum.photos/seed/' + b._id + '/100/100'" [alt]="b.name" class="predictive-img">
+                </div>
+                <div class="predictive-info">
+                  <p class="predictive-title">{{ b.name }}</p>
+                  <p class="predictive-meta">{{ categoryName(b.categoryId) }} {{ b.zone ? '· ' + b.zone : '' }}</p>
+                </div>
+              </a>
+            }
+          </div>
+        }
       </div>
     </div>
   </section>

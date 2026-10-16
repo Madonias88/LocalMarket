@@ -6,6 +6,7 @@ import {
   inject,
   OnInit,
   signal,
+  computed,
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DecimalPipe, DatePipe } from '@angular/common';
@@ -13,6 +14,7 @@ import * as L from 'leaflet';
 import { ApiService } from '../../services/api.service';
 import { GeolocationService } from '../../services/geolocation.service';
 import { FavoritesService } from '../../services/favorites.service';
+import { AuthService } from '../../services/auth.service';
 import { QrViewComponent } from '../../components/qr-view/qr-view';
 import { distanceKm, formatDistance } from '../../utils/location';
 import { openNowLabel } from '../../utils/open-hours';
@@ -33,7 +35,10 @@ export class DetailPage implements OnInit, AfterViewInit {
   private readonly geo = inject(GeolocationService);
   readonly favs = inject(FavoritesService);
 
+  readonly auth = inject(AuthService);
+
   readonly showQr = signal(false);
+  readonly isAdmin = computed(() => this.auth.user()?.role === 'admin');
 
   @ViewChild('map', { read: ElementRef }) mapElement!: ElementRef<HTMLDivElement>;
 
@@ -58,6 +63,10 @@ export class DetailPage implements OnInit, AfterViewInit {
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
+    const currentUser = this.auth.user();
+    if (currentUser?.name || currentUser?.username) {
+      this.reviewName.set(currentUser.name || currentUser.username);
+    }
     this.api.categories().subscribe((c) => this.categories.set(c));
     this.api.business(id).subscribe({
       next: (b) => {
@@ -85,12 +94,15 @@ export class DetailPage implements OnInit, AfterViewInit {
       this.reviews.set(r.reviews);
       this.reviewCount.set(r.count);
       this.reviewAverage.set(r.average);
+      if (this.business()) {
+        this.business.update((b) => (b ? { ...b, rating: r.average, reviewCount: r.count } : b));
+      }
     });
   }
 
-  setRating(value: string) {
+  setRating(value: string | number) {
     const n = Number(value);
-    this.reviewRating.set(Number.isInteger(n) ? n : 5);
+    this.reviewRating.set(Number.isInteger(n) ? Math.max(1, Math.min(5, n)) : 5);
   }
 
   submitReview() {
@@ -113,6 +125,11 @@ export class DetailPage implements OnInit, AfterViewInit {
         next: () => {
           this.submitting.set(false);
           this.reviewSent.set(true);
+          this.reviewComment.set('');
+          this.loadReviews();
+          setTimeout(() => {
+            this.reviewSent.set(false);
+          }, 4500);
         },
         error: () => {
           this.submitting.set(false);
@@ -259,6 +276,30 @@ export class DetailPage implements OnInit, AfterViewInit {
 
   toggleQr() {
     this.showQr.set(!this.showQr());
+  }
+
+  // --- Admin Quick Actions ---
+  toggleVerifiedAdmin() {
+    const b = this.business();
+    if (!b || !b._id) return;
+    this.api.updateBusiness(b._id, { verified: !b.verified }).subscribe({
+      next: (updated) => this.business.set(updated)
+    });
+  }
+
+  toggleActiveAdmin() {
+    const b = this.business();
+    if (!b || !b._id) return;
+    
+    const onSuccess = () => {
+      this.business.set({ ...b, active: !b.active });
+    };
+
+    if (b.active) {
+      this.api.deleteBusiness(b._id).subscribe({ next: onSuccess });
+    } else {
+      this.api.updateBusiness(b._id, { active: true }).subscribe({ next: onSuccess });
+    }
   }
 
   /** Comparte en WhatsApp o con el menú nativo del dispositivo. */

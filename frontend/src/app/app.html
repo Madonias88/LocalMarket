@@ -12,6 +12,9 @@
     <a routerLink="/negocios" routerLinkActive="active">Negocios</a>
     <a routerLink="/promos" routerLinkActive="active">Promociones</a>
     @if (auth.authed()) {
+      @if (auth.user()?.role === 'admin') {
+        <a routerLink="/admin" routerLinkActive="active" class="nav-admin">🛡️ Admin</a>
+      }
       <a routerLink="/mi-negocio" routerLinkActive="active">Mi negocio</a>
       <button class="btn-logout" (click)="logout()">Salir</button>
     } @else {

@@ -25,8 +25,9 @@ const openingHoursSchema = new mongoose.Schema(
 
 const businessSchema = new mongoose.Schema(
   {
-    _id: { type: String },
+    ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
     ownerUsername: { type: String, default: '', index: true },
+    slug: { type: String, unique: true, sparse: true, trim: true, lowercase: true, index: true },
     name: { type: String, required: true, trim: true },
     description: { type: String, default: '' },
     categoryId: { type: String, required: true, index: true },

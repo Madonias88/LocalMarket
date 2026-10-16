@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import Review from '../models/Review.js';
 import Business from '../models/Business.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { getBusinessQuery } from './businesses.js';
 
 export const reviewsRouter = Router();
 
@@ -34,10 +35,16 @@ async function recalcRating(businessId) {
 }
 
 // Resenas aprobadas de un negocio + resumen (publico)
+// Acepta tanto ObjectId como slug del negocio
 reviewsRouter.get('/:businessId', async (req, res) => {
   try {
+    // Resolver el negocio por ObjectId o slug para obtener el _id real
+    const query = getBusinessQuery(req.params.businessId);
+    const business = await Business.findOne(query);
+    if (!business) return res.status(404).json({ message: 'Negocio no encontrado' });
+
     const reviews = await Review.find({
-      businessId: req.params.businessId,
+      businessId: business._id,
       approved: true,
     }).sort({ createdAt: -1 });
 
@@ -52,22 +59,23 @@ reviewsRouter.get('/:businessId', async (req, res) => {
   }
 });
 
-// Crear una resena (se publica tras moderacion del admin)
+// Crear una resena (se publica de inmediato y actualiza el rating del negocio)
 reviewsRouter.post('/:businessId', reviewValidators, handleValidation, async (req, res) => {
   try {
-    const business = await Business.findById(req.params.businessId);
+    const query = getBusinessQuery(req.params.businessId);
+    const business = await Business.findOne(query);
     if (!business) return res.status(404).json({ message: 'Negocio no encontrado' });
 
     const { userName, rating, comment } = req.body;
     const review = new Review({
-      _id: `rev-${Date.now().toString(36)}`,
-      businessId: req.params.businessId,
+      businessId: business._id,
       userName: userName.trim(),
       rating: Number(rating),
       comment: (comment || '').trim(),
-      approved: false,
+      approved: true, // Auto-aprobada para que se muestre de inmediato
     });
     await review.save();
+    await recalcRating(business._id);
     res.status(201).json(review);
   } catch (err) {
     console.error('Error al crear resena:', err);
@@ -80,7 +88,12 @@ reviewsRouter.get('/admin/list', requireAuth, requireAdmin, async (req, res) => 
   try {
     const { businessId, status } = req.query;
     const filter = {};
-    if (businessId) filter.businessId = businessId;
+    if (businessId) {
+      const query = getBusinessQuery(businessId);
+      const biz = await Business.findOne(query);
+      if (biz) filter.businessId = biz._id;
+      else filter.businessId = businessId; // fallback
+    }
     if (status === 'pending') filter.approved = false;
     else if (status === 'approved') filter.approved = true;
 
@@ -106,11 +119,11 @@ reviewsRouter.put('/:id', requireAuth, requireAdmin, async (req, res) => {
     const review = await Review.findByIdAndUpdate(
       req.params.id,
       { approved },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!review) return res.status(404).json({ message: 'Reseña no encontrada' });
 
-    if (approved) await recalcRating(review.businessId);
+    await recalcRating(review.businessId);
     res.json(review);
   } catch (err) {
     console.error('Error al moderar resena:', err);
@@ -124,7 +137,7 @@ reviewsRouter.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
     const review = await Review.findByIdAndDelete(req.params.id);
     if (!review) return res.status(404).json({ message: 'Reseña no encontrada' });
 
-    if (review.approved) await recalcRating(review.businessId);
+    await recalcRating(review.businessId);
     res.json({ message: 'Reseña eliminada' });
   } catch (err) {
     console.error('Error al eliminar resena:', err);

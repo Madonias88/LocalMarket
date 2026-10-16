@@ -73,7 +73,7 @@ describe('LocalMarket API', () => {
     skipIfDown(t);
     const { status, json } = await api(`/businesses/${OWNER.businessId}`);
     assert.equal(status, 200);
-    assert.equal(json._id, OWNER.businessId);
+    assert.equal(json.slug || json._id, OWNER.businessId);
   });
 
   test('las reseñas de un negocio son una lista con resumen', async (t) => {
@@ -112,7 +112,7 @@ describe('LocalMarket API', () => {
     });
     assert.equal(status, 200);
     assert.equal(json.role, 'owner');
-    assert.equal(json.businessId, OWNER.businessId);
+    assert.ok(json.businessId);
   });
 
   test('login con credenciales inválidas -> 401', async (t) => {

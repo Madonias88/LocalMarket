@@ -7,12 +7,25 @@ import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import mongoose from 'mongoose';
 import Business from '../models/Business.js';
 import Review from '../models/Review.js';
 import User from '../models/User.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 export const businessesRouter = Router();
+
+/**
+ * Resuelve una consulta de negocio permitiendo buscar tanto por ObjectId como por slug.
+ */
+export function getBusinessQuery(idOrSlug) {
+  if (!idOrSlug) return { _id: null };
+  const str = String(idOrSlug).trim();
+  if (mongoose.isValidObjectId(str)) {
+    return { $or: [{ _id: new mongoose.Types.ObjectId(str) }, { slug: str }] };
+  }
+  return { slug: str };
+}
 
 // --- Subida de fotos (multer) ---
 // Las imágenes se guardan en backend/uploads/ y Express las sirve en /uploads.
@@ -81,15 +94,24 @@ async function checkOwnerOrAdmin(req, res) {
     res.status(403).json({ message: 'Usuario no encontrado' });
     return false;
   }
+  const query = getBusinessQuery(req.params.id);
+  const b = await Business.findOne(query);
+  if (!b) {
+    res.status(404).json({ message: 'Negocio no encontrado' });
+    return false;
+  }
+  const bIdStr = b._id.toString();
   const isOwner =
-    user.businessId === req.params.id ||
-    (Array.isArray(user.businessIds) && user.businessIds.includes(req.params.id));
+    (b.ownerId && b.ownerId.toString() === user._id.toString()) ||
+    b.ownerUsername === user.username ||
+    user.businessId === bIdStr ||
+    user.businessId === b.slug ||
+    (Array.isArray(user.businessIds) &&
+      (user.businessIds.includes(bIdStr) || user.businessIds.includes(b.slug)));
+
   if (!isOwner) {
-    const b = await Business.findOne({ _id: req.params.id, ownerUsername: user.username });
-    if (!b) {
-      res.status(403).json({ message: 'Solo puedes editar tus propios negocios' });
-      return false;
-    }
+    res.status(403).json({ message: 'Solo puedes editar tus propios negocios' });
+    return false;
   }
   return true;
 }
@@ -220,10 +242,15 @@ businessesRouter.get('/my-businesses', requireAuth, async (req, res) => {
       if (user.businessId && !userBIds.includes(user.businessId)) {
         userBIds.push(user.businessId);
       }
+      const objectIdBIds = userBIds
+        .filter((id) => mongoose.isValidObjectId(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
       filter = {
         $or: [
+          { ownerId: user._id },
           { ownerUsername: user.username },
-          { _id: { $in: userBIds } },
+          { _id: { $in: objectIdBIds } },
+          { slug: { $in: userBIds } },
         ],
       };
     }
@@ -335,7 +362,8 @@ businessesRouter.get('/zones', async (_req, res) => {
 // Detalle publico de un negocio (activos; y cualquiera si admin pide includeInactive)
 businessesRouter.get('/:id', async (req, res) => {
   try {
-    const business = await Business.findById(req.params.id);
+    const query = getBusinessQuery(req.params.id);
+    const business = await Business.findOne(query);
     if (!business) return res.status(404).json({ message: 'Negocio no encontrado' });
     if (business.active === false && !req.query.includeInactive) {
       return res.status(404).json({ message: 'Negocio no encontrado' });
@@ -376,10 +404,10 @@ businessesRouter.post('/register', businessValidators, handleValidation, async (
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '') || 'negocio';
-    const businessId = `${slug}-${Date.now().toString(36)}`;
+    const uniqueSlug = `${slug}-${Date.now().toString(36)}`;
 
     const business = new Business({
-      _id: businessId,
+      slug: uniqueSlug,
       name: String(name).trim(),
       categoryId: String(categoryId),
       description: String(req.body.description || '').trim(),
@@ -403,15 +431,17 @@ businessesRouter.post('/register', businessValidators, handleValidation, async (
         return res.status(404).json({ message: 'Usuario no encontrado' });
       }
 
+      business.ownerId = existingUser._id;
       business.ownerUsername = existingUser.username;
       await business.save();
 
+      const savedId = business._id.toString();
       if (!existingUser.businessIds) existingUser.businessIds = [];
-      if (!existingUser.businessIds.includes(businessId)) {
-        existingUser.businessIds.push(businessId);
+      if (!existingUser.businessIds.includes(savedId)) {
+        existingUser.businessIds.push(savedId);
       }
       if (!existingUser.businessId) {
-        existingUser.businessId = businessId;
+        existingUser.businessId = savedId;
       }
       await existingUser.save();
 
@@ -437,27 +467,31 @@ businessesRouter.post('/register', businessValidators, handleValidation, async (
       business.ownerUsername = uname;
 
       if (user) {
+        business.ownerId = user._id;
         // Si el usuario ya existe, vincular el nuevo negocio a su cuenta
         await business.save();
+        const savedId = business._id.toString();
         if (!user.businessIds) user.businessIds = [];
-        if (!user.businessIds.includes(businessId)) user.businessIds.push(businessId);
-        if (!user.businessId) user.businessId = businessId;
+        if (!user.businessIds.includes(savedId)) user.businessIds.push(savedId);
+        if (!user.businessId) user.businessId = savedId;
         await user.save();
       } else {
         // Crear usuario nuevo con negocio vinculado
         user = new User({
-          _id: uname,
           username: uname,
           passwordHash: bcrypt.hashSync(String(password), 10),
           role: 'owner',
-          businessId,
-          businessIds: [businessId],
           name: String(name).trim(),
           active: false,
         });
 
         try {
+          await user.save();
+          business.ownerId = user._id;
           await business.save();
+          const savedId = business._id.toString();
+          user.businessId = savedId;
+          user.businessIds = [savedId];
           await user.save();
         } catch (saveErr) {
           await business.deleteOne().catch(() => {});
@@ -491,8 +525,9 @@ businessesRouter.post('/', requireAuth, requireAdmin, async (req, res) => {
     }
 
     const body = { ...req.body };
-    if (!body._id && body.name) {
-      body._id =
+    delete body._id; // Never allow manual _id
+    if (!body.slug && body.name) {
+      body.slug =
         body.name
           .toLowerCase()
           .normalize('NFD')
@@ -515,9 +550,15 @@ businessesRouter.post('/', requireAuth, requireAdmin, async (req, res) => {
 // cuenta del dueño para que entre a "Mi negocio". SOLO admin.
 businessesRouter.post('/:id/approve', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const business = await Business.findByIdAndUpdate(req.params.id, { active: true }, { new: true });
+    const query = getBusinessQuery(req.params.id);
+    const business = await Business.findOneAndUpdate(query, { active: true }, { new: true });
     if (!business) return res.status(404).json({ message: 'Negocio no encontrado' });
-    await User.updateOne({ businessId: business._id, role: 'owner' }, { active: true });
+    // Habilita al dueño por ownerId o por ownerUsername
+    if (business.ownerId) {
+      await User.updateOne({ _id: business.ownerId, role: 'owner' }, { active: true });
+    } else {
+      await User.updateOne({ username: business.ownerUsername, role: 'owner' }, { active: true });
+    }
     res.json({ message: 'Negocio aprobado y publicado', business });
   } catch (err) {
     console.error('Error al aprobar negocio:', err);
@@ -528,9 +569,14 @@ businessesRouter.post('/:id/approve', requireAuth, requireAdmin, async (req, res
 // Rechazar una solicitud pendiente: elimina el negocio y su cuenta de dueño.
 businessesRouter.post('/:id/reject', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const business = await Business.findByIdAndDelete(req.params.id);
+    const query = getBusinessQuery(req.params.id);
+    const business = await Business.findOneAndDelete(query);
     if (!business) return res.status(404).json({ message: 'Negocio no encontrado' });
-    await User.deleteMany({ businessId: business._id, role: 'owner' });
+    if (business.ownerId) {
+      await User.deleteMany({ _id: business.ownerId, role: 'owner' });
+    } else {
+      await User.deleteMany({ username: business.ownerUsername, role: 'owner' });
+    }
     res.json({ message: 'Solicitud rechazada y eliminada' });
   } catch (err) {
     console.error('Error al rechazar solicitud:', err);
@@ -541,7 +587,8 @@ businessesRouter.post('/:id/reject', requireAuth, requireAdmin, async (req, res)
 // Editar: el admin todo; el OWNER solo su propio negocio y con sus campos permitidos.
 businessesRouter.put('/:id', requireAuth, businessValidators, handleValidation, async (req, res) => {
   try {
-    const business = await Business.findById(req.params.id);
+    const query = getBusinessQuery(req.params.id);
+    const business = await Business.findOne(query);
     if (!business) return res.status(404).json({ message: 'Negocio no encontrado' });
 
     // Owner: verifica si el usuario es dueño o admin
@@ -554,8 +601,9 @@ businessesRouter.put('/:id', requireAuth, businessValidators, handleValidation, 
     for (const key of allowed) {
       if (key in req.body) body[key] = req.body[key];
     }
+    delete body._id; // Never overwrite _id
 
-    const updated = await Business.findByIdAndUpdate(req.params.id, body, {
+    const updated = await Business.findByIdAndUpdate(business._id, body, {
       new: true,
       runValidators: true,
     });
@@ -563,7 +611,7 @@ businessesRouter.put('/:id', requireAuth, businessValidators, handleValidation, 
     if (updated.hours && !body.openingHours) {
       return res.json(
         await Business.findByIdAndUpdate(
-          req.params.id,
+          business._id,
           { openingHours: structuredHours(updated.hours) },
           { new: true }
         )
@@ -579,8 +627,9 @@ businessesRouter.put('/:id', requireAuth, businessValidators, handleValidation, 
 // Baja logica: en vez de borrar el documento, se desactiva. SOLO admin.
 businessesRouter.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const business = await Business.findByIdAndUpdate(
-      req.params.id,
+    const query = getBusinessQuery(req.params.id);
+    const business = await Business.findOneAndUpdate(
+      query,
       { active: false },
       { new: true }
     );
@@ -600,7 +649,8 @@ businessesRouter.post('/:id/photos', requireAuth, (req, res) => {
       return res.status(400).json({ message: uploadErrorMessage(uploadErr) });
     }
     try {
-      const business = await Business.findById(req.params.id);
+      const query = getBusinessQuery(req.params.id);
+      const business = await Business.findOne(query);
       if (!business) return res.status(404).json({ message: 'Negocio no encontrado' });
       const ok = await checkOwnerOrAdmin(req, res);
       if (!ok) return;
@@ -612,7 +662,7 @@ businessesRouter.post('/:id/photos', requireAuth, (req, res) => {
       const newUrls = req.files.map((f) => `${baseUrl}/uploads/${f.filename}`);
       const photoUrls = [...(business.photoUrls || []), ...newUrls].slice(0, MAX_PHOTOS);
 
-      const updated = await Business.findByIdAndUpdate(req.params.id, { photoUrls }, { new: true });
+      const updated = await Business.findByIdAndUpdate(business._id, { photoUrls }, { new: true });
       res.json({ photoUrls, business: updated });
     } catch (err) {
       console.error('Error al subir fotos:', err);
@@ -629,7 +679,8 @@ businessesRouter.delete('/:id/photos', requireAuth, async (req, res) => {
     if (!url || typeof url !== 'string') {
       return res.status(400).json({ message: 'URL de foto inválida' });
     }
-    const business = await Business.findById(req.params.id);
+    const query = getBusinessQuery(req.params.id);
+    const business = await Business.findOne(query);
     if (!business) return res.status(404).json({ message: 'Negocio no encontrado' });
     const ok = await checkOwnerOrAdmin(req, res);
     if (!ok) return;
@@ -640,7 +691,7 @@ businessesRouter.delete('/:id/photos', requireAuth, async (req, res) => {
       fs.promises.unlink(path.join(uploadsDir, filename)).catch(() => {});
     }
 
-    const updated = await Business.findByIdAndUpdate(req.params.id, { photoUrls }, { new: true });
+    const updated = await Business.findByIdAndUpdate(business._id, { photoUrls }, { new: true });
     res.json({ photoUrls, business: updated });
   } catch (err) {
     console.error('Error al eliminar foto:', err);

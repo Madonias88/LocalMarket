@@ -94,6 +94,21 @@ h4,
   background: var(--primary);
 }
 
+.site-nav a.nav-admin {
+  background: #0f172a;
+  color: #f8fafc;
+  font-weight: 700;
+}
+
+.site-nav a.nav-admin:hover {
+  background: #1e293b;
+}
+
+.site-nav a.nav-admin.active {
+  background: #0f172a;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.5);
+}
+
 .btn-logout {
   background: #fff;
   color: var(--primary-dark);

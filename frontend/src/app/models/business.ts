@@ -14,6 +14,8 @@ export interface BusinessHoursRow {
 
 export interface Business {
   _id?: string;
+  slug?: string;
+  ownerId?: string;
   name: string;
   description: string;
   categoryId: string;
@@ -28,6 +30,7 @@ export interface Business {
   verified: boolean;
   featured: boolean;
   active?: boolean;
+  ownerUsername?: string;
   promoText?: string;
   promoStart?: string;
   promoEnd?: string;

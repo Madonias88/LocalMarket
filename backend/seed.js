@@ -9,8 +9,9 @@ import User from './models/User.js';
 
 /**
  * Carga datos de ejemplo en MongoDB Local. Es idempotente: cada documento
- * usa un _id fijo (slug) y sobrescribe los existentes (upsert), por lo que
- * ejecutarlo varias veces NO duplica datos.
+ * usa un slug fijo y sobrescribe los existentes (upsert), por lo que
+ * ejecutarlo varias veces NO duplica datos. Los _id son ObjectId nativos
+ * generados por MongoDB.
  *
  * Uso: npm run seed
  */
@@ -31,7 +32,7 @@ const categories = [
 const businesses = [
   // ---------- San Raymundo ----------
   {
-    _id: 'comedor-mili-san-raymundo',
+    slug: 'comedor-mili-san-raymundo',
     name: 'Comedor Doña Mili',
     description: 'Desayunos y almuerzos caseros: pepián, hilachas, carnitas y caldos. Comida del día a precio popular.',
     categoryId: 'restaurantes',
@@ -65,7 +66,7 @@ const businesses = [
     promos: [{ titulo: 'Comida del día por Q25', descuento: 'Combo', desde: '', hasta: '' }],
   },
   {
-    _id: 'farmacia-san-raymundo',
+    slug: 'farmacia-san-raymundo',
     name: 'Farmacia San Raymundo',
     description: 'Medicamentos, vitaminas y productos de higiene. Entrega a domicilio dentro del casco urbano.',
     categoryId: 'salud',
@@ -95,7 +96,7 @@ const businesses = [
     reviewCount: 35,
   },
   {
-    _id: 'ferreteria-el-constructor',
+    slug: 'ferreteria-el-constructor',
     name: 'Ferretería El Constructor',
     description: 'Materiales de construcción, herramientas, pintura y plomería. Presupuestos y entregas en obra.',
     categoryId: 'comercios',
@@ -125,7 +126,7 @@ const businesses = [
     reviewCount: 22,
   },
   {
-    _id: 'taller-don-tono-sr',
+    slug: 'taller-don-tono-sr',
     name: 'Taller Mecánico Don Toño',
     description: 'Reparación de motor, frenos y suspensión. Cambio de aceite y diagnóstico con escáner.',
     categoryId: 'talleres',
@@ -155,7 +156,7 @@ const businesses = [
     reviewCount: 19,
   },
   {
-    _id: 'barberia-el-raymundo',
+    slug: 'barberia-el-raymundo',
     name: 'Barbería El Raymundo',
     description: 'Cortes clásicos y modernos, arreglo de barba y tintes. Estilo sin cita previa.',
     categoryId: 'belleza',
@@ -187,7 +188,7 @@ const businesses = [
 
   // ---------- San Juan Sacatepéquez ----------
   {
-    _id: 'cafe-la-estacion-sjs',
+    slug: 'cafe-la-estacion-sjs',
     name: 'Cafetería La Estación',
     description: 'Café de la región, repostería casera y desayunos. Hermoso ambiente junto al parque central.',
     categoryId: 'restaurantes',
@@ -221,7 +222,7 @@ const businesses = [
     promos: [{ titulo: 'Café y pastel por Q30', descuento: 'Combo', desde: '', hasta: '2026-09-30' }],
   },
   {
-    _id: 'farmacia-san-juan',
+    slug: 'farmacia-san-juan',
     name: 'Farmacia San Juan',
     description: 'Medicamentos genéricos y de patente, servicio de presión y glucosa gratuita.',
     categoryId: 'salud',
@@ -251,7 +252,7 @@ const businesses = [
     reviewCount: 21,
   },
   {
-    _id: 'panaderia-dona-julia',
+    slug: 'panaderia-dona-julia',
     name: 'Panadería Doña Julia',
     description: 'Pan artesanal, galletas, tradicionales y pasteles por encargo. Pan caliente cada mañana.',
     categoryId: 'comercios',
@@ -281,7 +282,7 @@ const businesses = [
     reviewCount: 17,
   },
   {
-    _id: 'envios-san-juan',
+    slug: 'envios-san-juan',
     name: 'Envíos y Paquetería San Juan',
     description: 'Paquetería nacional, giros y encomiendas. Recolección en tu casa con aviso por WhatsApp.',
     categoryId: 'servicios',
@@ -312,7 +313,7 @@ const businesses = [
     promos: [{ titulo: 'Recolección gratis en la zona', descuento: 'Gratis', desde: '', hasta: '2026-12-31' }],
   },
   {
-    _id: 'estetica-flor-de-liz',
+    slug: 'estetica-flor-de-liz',
     name: 'Estética Flor de Liz',
     description: 'Cortes, manicure, pedicure, cejas y tratamientos faciales. Precios accesibles.',
     categoryId: 'belleza',
@@ -344,7 +345,7 @@ const businesses = [
 
   // ---------- Ciudad Quetzal ----------
   {
-    _id: 'restaurante-la-ceiba',
+    slug: 'restaurante-la-ceiba',
     name: 'Restaurante La Ceiba',
     description: 'Comida guatemalteca y antojitos: chuchitos, tamales, rellenitos y platos típicos. Música en vivo los sábados.',
     categoryId: 'restaurantes',
@@ -378,7 +379,7 @@ const businesses = [
     promos: [{ titulo: '2x1 en chuchitos los sábados', descuento: '2x1', desde: '', hasta: '2026-12-31' }],
   },
   {
-    _id: 'consultorio-medico-vida',
+    slug: 'consultorio-medico-vida',
     name: 'Consultorio Médico Vida',
     description: 'Consulta general, control de niño sano y enfermedades crónicas. Citas por WhatsApp y expediente digital.',
     categoryId: 'salud',
@@ -408,7 +409,7 @@ const businesses = [
     reviewCount: 38,
   },
   {
-    _id: 'ferreteria-el-vecino',
+    slug: 'ferreteria-el-vecino',
     name: 'Ferretería y Abarrotes El Vecino',
     description: 'Venta de abarrotes, ferretería y productos de limpieza. Crédito de fiado para vecinos de confianza.',
     categoryId: 'comercios',
@@ -438,7 +439,7 @@ const businesses = [
     reviewCount: 14,
   },
   {
-    _id: 'lavanderia-burbuja-ctq',
+    slug: 'lavanderia-burbuja-ctq',
     name: 'Lavandería Burbuja',
     description: 'Lavado y secado por kilo, planchado y tintorería. Recogida y entrega a domicilio en Ciudad Quetzal.',
     categoryId: 'servicios',
@@ -468,7 +469,7 @@ const businesses = [
     reviewCount: 11,
   },
   {
-    _id: 'techfix-ciudad-quetzal',
+    slug: 'techfix-ciudad-quetzal',
     name: 'TechFix Reparación de Celulares',
     description: 'Cambio de pantallas, baterías y reparación de software. Diagnóstico gratis y garantía escrita.',
     categoryId: 'tecnologia',
@@ -501,7 +502,7 @@ const businesses = [
 
   // ---------- Ciudad de Guatemala ----------
   {
-    _id: 'despacho-juridico-torres',
+    slug: 'despacho-juridico-torres',
     name: 'Despacho Jurídico Torres y Asociados',
     description: 'Asesoría legal en derecho penal, civil, laboral y de familia. Primera consulta informativa gratuita.',
     categoryId: 'profesionales',
@@ -531,7 +532,7 @@ const businesses = [
     reviewCount: 26,
   },
   {
-    _id: 'restaurante-el-faisan',
+    slug: 'restaurante-el-faisan',
     name: 'Restaurante El Faisán',
     description: "Platos típicos de alta cocina guatemalteca: kak'ik, jocón, subanik y arroz negro. Ambiente familiar.",
     categoryId: 'restaurantes',
@@ -565,7 +566,7 @@ const businesses = [
     promos: [{ titulo: 'Menú degustación con 10%', descuento: '10%', desde: '', hasta: '2026-12-15' }],
   },
   {
-    _id: 'gimnasio-iron-sport',
+    slug: 'gimnasio-iron-sport',
     name: 'Gimnasio Iron Sport',
     description: 'Sala de pesas, cardio, clases grupales y nutrición. Plan mensual sin permanencia.',
     categoryId: 'servicios',
@@ -596,7 +597,7 @@ const businesses = [
     promos: [{ titulo: 'Primer mes a mitad de precio', descuento: '50%', desde: '', hasta: '2026-12-31' }],
   },
   {
-    _id: 'libreria-el-pensativo',
+    slug: 'libreria-el-pensativo',
     name: 'Librería El Pensativo',
     description: 'Libros guatemaltecos, historia, literatura y papelería fina. Rincón de lectura y pedidos especiales.',
     categoryId: 'comercios',
@@ -626,7 +627,7 @@ const businesses = [
     reviewCount: 18,
   },
   {
-    _id: 'clinica-dental-sonrisa',
+    slug: 'clinica-dental-sonrisa',
     name: 'Clínica Dental Sonrisa',
     description: 'Limpieza, blanqueamiento, ortodoncia y empastes. Equipo moderno y planes financiados.',
     categoryId: 'salud',
@@ -667,19 +668,19 @@ const promos = {
 
 // Resenas de ejemplo: aprobadas (visibles) y pendientes (para moderar en admin)
 const reviews = [
-  { _id: 'rev-comedor-1', businessId: 'comedor-mili-san-raymundo', userName: 'Rosa M.', rating: 5, comment: 'El pepián es delicioso y el trato es muy amable. Excelente precio.', approved: true },
-  { _id: 'rev-comedor-2', businessId: 'comedor-mili-san-raymundo', userName: 'Carlos G.', rating: 4, comment: 'Buena comida casera, porciones generosas.', approved: true },
-  { _id: 'rev-comedor-3', businessId: 'comedor-mili-san-raymundo', userName: 'Lucía P.', rating: 5, comment: 'Los caldos los mejores de San Raymundo.', approved: false },
-  { _id: 'rev-ceiba-1', businessId: 'restaurante-la-ceiba', userName: 'María F.', rating: 5, comment: 'Los chuchitos están para chuparse los dedos.', approved: true },
-  { _id: 'rev-ceiba-2', businessId: 'restaurante-la-ceiba', userName: 'Diego R.', rating: 4, comment: 'Ambiente agradable y música en vivo los sábados.', approved: true },
-  { _id: 'rev-techfix-1', businessId: 'techfix-ciudad-quetzal', userName: 'Jorge A.', rating: 5, comment: 'Me cambiaron la pantalla el mismo día, con garantía.', approved: true },
-  { _id: 'rev-techfix-2', businessId: 'techfix-ciudad-quetzal', userName: 'Elena S.', rating: 4, comment: 'Buen servicio, diagnóstico honesto.', approved: false },
-  { _id: 'rev-cafe-1', businessId: 'cafe-la-estacion-sjs', userName: 'Pedro L.', rating: 5, comment: 'El café de la región está espectacular.', approved: true },
-  { _id: 'rev-cafe-2', businessId: 'cafe-la-estacion-sjs', userName: 'Ana V.', rating: 5, comment: 'Mi lugar favorito para desayunar los domingos.', approved: false },
-  { _id: 'rev-consulta-1', businessId: 'consultorio-medico-vida', userName: 'Sofía B.', rating: 5, comment: 'La doctora es muy atenta y las citas son puntuales.', approved: true },
-  { _id: 'rev-consulta-2', businessId: 'consultorio-medico-vida', userName: 'Fernando T.', rating: 4, comment: 'Muy buen trato y precios justos.', approved: true },
-  { _id: 'rev-lavanderia-1', businessId: 'lavanderia-burbuja-ctq', userName: 'Karla D.', rating: 5, comment: 'Ropa limpia y bien doblada, entregan a domicilio.', approved: false },
-  { _id: 'rev-faisan-1', businessId: 'restaurante-el-faisan', userName: 'Miguel C.', rating: 5, comment: "El kak'ik es de otro nivel. Recomendado.", approved: true },
+  { businessId: 'comedor-mili-san-raymundo', userName: 'Rosa M.', rating: 5, comment: 'El pepián es delicioso y el trato es muy amable. Excelente precio.', approved: true },
+  { businessId: 'comedor-mili-san-raymundo', userName: 'Carlos G.', rating: 4, comment: 'Buena comida casera, porciones generosas.', approved: true },
+  { businessId: 'comedor-mili-san-raymundo', userName: 'Lucía P.', rating: 5, comment: 'Los caldos los mejores de San Raymundo.', approved: false },
+  { businessId: 'restaurante-la-ceiba', userName: 'María F.', rating: 5, comment: 'Los chuchitos están para chuparse los dedos.', approved: true },
+  { businessId: 'restaurante-la-ceiba', userName: 'Diego R.', rating: 4, comment: 'Ambiente agradable y música en vivo los sábados.', approved: true },
+  { businessId: 'techfix-ciudad-quetzal', userName: 'Jorge A.', rating: 5, comment: 'Me cambiaron la pantalla el mismo día, con garantía.', approved: true },
+  { businessId: 'techfix-ciudad-quetzal', userName: 'Elena S.', rating: 4, comment: 'Buen servicio, diagnóstico honesto.', approved: false },
+  { businessId: 'cafe-la-estacion-sjs', userName: 'Pedro L.', rating: 5, comment: 'El café de la región está espectacular.', approved: true },
+  { businessId: 'cafe-la-estacion-sjs', userName: 'Ana V.', rating: 5, comment: 'Mi lugar favorito para desayunar los domingos.', approved: false },
+  { businessId: 'consultorio-medico-vida', userName: 'Sofía B.', rating: 5, comment: 'La doctora es muy atenta y las citas son puntuales.', approved: true },
+  { businessId: 'consultorio-medico-vida', userName: 'Fernando T.', rating: 4, comment: 'Muy buen trato y precios justos.', approved: true },
+  { businessId: 'lavanderia-burbuja-ctq', userName: 'Karla D.', rating: 5, comment: 'Ropa limpia y bien doblada, entregan a domicilio.', approved: false },
+  { businessId: 'restaurante-el-faisan', userName: 'Miguel C.', rating: 5, comment: "El kak'ik es de otro nivel. Recomendado.", approved: true },
 ];
 
 async function run() {
@@ -707,16 +708,34 @@ async function run() {
         // Horarios estructurados derivados del mapa legible "horas" para
         // permitir consultas por rango horario ($elemMatch sobre el arreglo).
         openingHours: structuredHours(biz.hours),
-        ...(promos[biz._id] ?? {}),
+        ...(promos[biz.slug] ?? {}),
       };
-      await Business.updateOne({ _id: biz._id }, { $set: data }, { upsert: true });
+      await Business.updateOne({ slug: biz.slug }, { $set: data }, { upsert: true });
     }
     console.log(`Negocios: ${businesses.length} documentos (idempotente).`);
 
+    // Obtener mapa de negocios por slug
+    const allBusinesses = await Business.find({}, '_id slug');
+    const bizMap = new Map(allBusinesses.map((b) => [b.slug, b._id]));
+
     for (const rev of reviews) {
-      await Review.updateOne({ _id: rev._id }, { $set: rev }, { upsert: true });
+      const targetBizId = bizMap.get(rev.businessId);
+      if (!targetBizId) continue;
+      await Review.updateOne(
+        { businessId: targetBizId, userName: rev.userName, comment: rev.comment },
+        {
+          $set: {
+            businessId: targetBizId,
+            userName: rev.userName,
+            rating: rev.rating,
+            comment: rev.comment,
+            approved: rev.approved,
+          },
+        },
+        { upsert: true }
+      );
     }
-    console.log(`Resenas: ${reviews.length} documentos (idempotente).`);
+    console.log(`Resenas: ${reviews.length} documentos procesados (idempotente).`);
 
     // Cuentas de acceso demo
     // - admin  / admin123 (rol admin)
@@ -725,31 +744,43 @@ async function run() {
     const adminHash = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'admin123', 10);
 
     await User.updateOne(
-      { _id: 'admin' },
-      { $set: { username: 'admin', passwordHash: adminHash, role: 'admin', name: 'Administrador LocalMarket', active: true } },
+      { username: 'admin' },
+      {
+        $set: {
+          username: 'admin',
+          passwordHash: adminHash,
+          role: 'admin',
+          name: 'Administrador LocalMarket',
+          active: true,
+        },
+      },
       { upsert: true }
     );
 
     let owners = 0;
     for (const biz of businesses) {
-      await Business.updateOne(
-        { _id: biz._id },
-        { $set: { ownerUsername: biz._id } }
-      );
-      await User.updateOne(
-        { _id: biz._id },
+      const bizDoc = await Business.findOne({ slug: biz.slug });
+      if (!bizDoc) continue;
+
+      const user = await User.findOneAndUpdate(
+        { username: biz.slug },
         {
           $set: {
-            username: biz._id,
+            username: biz.slug,
             passwordHash: ownerPasswordHash,
             role: 'owner',
-            businessId: biz._id,
-            businessIds: [biz._id],
+            businessId: String(bizDoc._id),
+            businessIds: [String(bizDoc._id)],
             name: biz.name,
             active: true,
           },
         },
-        { upsert: true }
+        { upsert: true, returnDocument: 'after' }
+      );
+
+      await Business.updateOne(
+        { _id: bizDoc._id },
+        { $set: { ownerId: user._id, ownerUsername: user.username } }
       );
       owners++;
     }
@@ -758,7 +789,8 @@ async function run() {
     // Recalcula el rating de negocios con resenas aprobadas de ejemplo
     const approved = await Review.find({ approved: true });
     const byBusiness = approved.reduce((acc, r) => {
-      (acc[r.businessId] ??= []).push(r.rating);
+      const bKey = String(r.businessId);
+      (acc[bKey] ??= []).push(r.rating);
       return acc;
     }, {});
     for (const [businessId, ratings] of Object.entries(byBusiness)) {

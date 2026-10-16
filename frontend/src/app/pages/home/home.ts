@@ -36,6 +36,7 @@ export class HomePage implements OnInit {
   readonly sortBy = signal<SortMode>('distance');
   readonly onlyOpen = signal(false);
   readonly onlyFavs = signal(false);
+  readonly showPredictive = signal(false);
 
   /** Existe al menos un negocio guardado en favoritos (localStorage). */
   readonly hasFavs = computed(() => this.favs.ids().length > 0);
@@ -101,6 +102,10 @@ export class HomePage implements OnInit {
   readonly visible = computed(() => {
     const start = (this.safePage() - 1) * this.pageSize;
     return this.filtered().slice(start, start + this.pageSize);
+  });
+
+  readonly visiblePredictive = computed(() => {
+    return this.filtered().slice(0, 5);
   });
 
   readonly startIndex = computed(() => (this.safePage() - 1) * this.pageSize + 1);
@@ -220,8 +225,13 @@ export class HomePage implements OnInit {
   setQuery(value: string) {
     this.query.set(value);
     this.page.set(1);
+    this.showPredictive.set(true);
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.reload(), 350);
+  }
+
+  hidePredictive() {
+    setTimeout(() => this.showPredictive.set(false), 200);
   }
 
   setSort(mode: string) {

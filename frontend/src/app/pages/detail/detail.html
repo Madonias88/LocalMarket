@@ -165,6 +165,52 @@
           <lm-qr-view [value]="currentUrl()" />
         </div>
       }
+
+      <!-- Admin Quick Actions (visible solo para role=admin) -->
+      @if (isAdmin()) {
+        <div class="admin-panel">
+          <div class="admin-panel-header">
+            <span class="admin-shield">🛡️</span>
+            <h3>Panel de Administrador</h3>
+          </div>
+          <div class="admin-actions-grid">
+            <button
+              type="button"
+              class="admin-action-btn"
+              [class.verified]="b.verified"
+              (click)="toggleVerifiedAdmin()"
+            >
+              <span class="admin-action-icon">{{ b.verified ? '✅' : '☐' }}</span>
+              <span class="admin-action-label">{{ b.verified ? 'Verificado' : 'Verificar' }}</span>
+            </button>
+
+            <a
+              class="admin-action-btn edit"
+              routerLink="/admin"
+            >
+              <span class="admin-action-icon">✏️</span>
+              <span class="admin-action-label">Editar en Admin</span>
+            </a>
+
+            <button
+              type="button"
+              class="admin-action-btn"
+              [class.danger]="b.active"
+              [class.success]="!b.active"
+              (click)="toggleActiveAdmin()"
+            >
+              <span class="admin-action-icon">{{ b.active ? '🚫' : '✅' }}</span>
+              <span class="admin-action-label">{{ b.active ? 'Desactivar' : 'Reactivar' }}</span>
+            </button>
+          </div>
+          <p class="admin-status-line">
+            Estado: <strong [class.active-text]="b.active" [class.inactive-text]="!b.active">{{ b.active ? 'Activo' : 'Inactivo' }}</strong>
+            @if (b.ownerUsername) {
+              · Dueño: <strong>{{ b.ownerUsername }}</strong>
+            }
+          </p>
+        </div>
+      }
     </div>
   </article>
 
@@ -184,9 +230,9 @@
               <span class="avatar">{{ r.userName.charAt(0) }}</span>
               <div>
                 <strong>{{ r.userName }}</strong>
-                <div class="stars">
-                  @for (s of stars(r.rating); track s) {
-                    <span>★</span>
+                <div class="stars" [title]="r.rating + ' de 5 estrellas'">
+                  @for (s of [1, 2, 3, 4, 5]; track s) {
+                    <span [class.star-filled]="s <= r.rating" [class.star-empty]="s > r.rating">{{ s <= r.rating ? '★' : '☆' }}</span>
                   }
                 </div>
               </div>
@@ -203,47 +249,57 @@
     }
 
     @if (reviewSent()) {
-      <div class="success">Gracias por tu reseña. Se publicará después de una revisión rápida.</div>
-    } @else {
-      <form class="review-form" (ngSubmit)="submitReview()">
-        <h3>Escribe una reseña</h3>
-        <div class="form-row">
-          <label>
-            Tu nombre
-            <input
-              type="text"
-              placeholder="Ej: María López"
-              [value]="reviewName()"
-              (input)="reviewName.set($any($event.target).value)"
-            />
-          </label>
-          <label>
-            Calificación
-            <select [value]="reviewRating()" (change)="setRating($any($event.target).value)">
-              <option [value]="5">★★★★★ (5)</option>
-              <option [value]="4">★★★★ (4)</option>
-              <option [value]="3">★★★ (3)</option>
-              <option [value]="2">★★ (2)</option>
-              <option [value]="1">★ (1)</option>
-            </select>
-          </label>
-        </div>
-        <label>
-          Tu comentario (opcional)
-          <textarea
-            rows="3"
-            placeholder="Cuéntanos tu experiencia..."
-            [value]="reviewComment()"
-            (input)="reviewComment.set($any($event.target).value)"
-          ></textarea>
-        </label>
-        @if (reviewError()) {
-          <p class="error">{{ reviewError() }}</p>
-        }
-        <button type="submit" [disabled]="submitting()">
-          {{ submitting() ? 'Enviando...' : 'Enviar reseña' }}
-        </button>
-      </form>
+      <div class="success">
+        <span>✅ ¡Gracias por tu reseña! Tu calificación y comentario han sido publicados.</span>
+      </div>
     }
+
+    <form class="review-form" (ngSubmit)="submitReview()">
+      <h3>Escribe una reseña</h3>
+      <div class="form-row">
+        <label>
+          Tu nombre
+          <input
+            type="text"
+            placeholder="Ej: María López"
+            [value]="reviewName()"
+            (input)="reviewName.set($any($event.target).value)"
+            required
+          />
+        </label>
+        <label>
+          Calificación
+          <div class="star-rating-picker" role="radiogroup" aria-label="Calificación en estrellas">
+            @for (s of [1, 2, 3, 4, 5]; track s) {
+              <button
+                type="button"
+                class="star-picker-btn"
+                [class.selected]="s <= reviewRating()"
+                (click)="setRating(s)"
+                [title]="s + ' de 5 estrellas'"
+              >
+                ★
+              </button>
+            }
+            <span class="star-rating-number">{{ reviewRating() }} / 5</span>
+          </div>
+        </label>
+      </div>
+      <label>
+        Tu comentario (opcional)
+        <textarea
+          rows="3"
+          placeholder="Cuéntanos tu experiencia con este negocio..."
+          [value]="reviewComment()"
+          (input)="reviewComment.set($any($event.target).value)"
+        ></textarea>
+      </label>
+      @if (reviewError()) {
+        <p class="error">{{ reviewError() }}</p>
+      }
+      <button type="submit" [disabled]="submitting()">
+        {{ submitting() ? 'Publicando...' : 'Publicar reseña' }}
+      </button>
+    </form>
   </section>
 }
