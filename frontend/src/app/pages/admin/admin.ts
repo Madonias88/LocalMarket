@@ -1,6 +1,6 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import type { Observable } from 'rxjs';
 import { ApiService } from '../../services/api.service';
@@ -9,6 +9,17 @@ import type { Business } from '../../models/business';
 import type { Category } from '../../models/category';
 import type { Review } from '../../models/review';
 import { listToText, textToList, promosToText, textToPromos } from '../../utils/lists';
+import {
+  cleanPhoneInput,
+  cleanWhatsAppInput,
+  cleanEmailInput,
+  cleanWebsiteInput,
+  validatePhone,
+  validateWhatsApp,
+  validateEmail,
+  validateWebsite,
+  normalizeWebsiteUrl,
+} from '../../utils/form-validators';
 
 interface FormState {
   _id?: string;
@@ -101,10 +112,8 @@ type SortMode = 'name' | 'rating' | 'createdAt';
 export class AdminPage implements OnInit {
   private readonly api = inject(ApiService);
   readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
-  readonly username = signal('');
-  readonly password = signal('');
-  readonly showPassword = signal(false);
   readonly error = signal('');
   readonly loading = signal(true);
 
@@ -114,15 +123,40 @@ export class AdminPage implements OnInit {
   readonly editing = signal<FormState | null>(null);
   readonly saving = signal(false);
 
+  readonly adminPaymentDropdownOpen = signal(false);
+  readonly adminCustomPaymentInput = signal('');
+  readonly standardPaymentOptions = [
+    { id: 'efectivo', label: 'Efectivo', icon: '💵', desc: 'Pago en efectivo' },
+    { id: 'tarjeta', label: 'Tarjeta de crédito / débito', icon: '💳', desc: 'Tarjetas de crédito o débito' },
+    { id: 'transferencia', label: 'Transferencia bancaria', icon: '🏦', desc: 'Transferencias y depósitos' },
+    { id: 'contra_entrega', label: 'Pago contra entrega', icon: '📦', desc: 'Cobro al momento de entregar' },
+    { id: 'billetera', label: 'Billetera digital', icon: '📱', desc: 'Tigo Money y billeteras' },
+    { id: 'credito', label: 'Crédito local', icon: '🤝', desc: 'Fiado o crédito' },
+    { id: 'cheque', label: 'Cheque', icon: '📝', desc: 'Cheque bancario' },
+  ];
+
+  readonly phoneError = signal('');
+  readonly whatsappError = signal('');
+  readonly emailError = signal('');
+
+  readonly websiteError = signal('');
+
   readonly search = signal('');
   readonly activeOnly = signal(false);
   readonly sortBy = signal<SortMode>('name');
 
   readonly showReviews = signal(false);
   readonly reviews = signal<Review[]>([]);
-  readonly reviewFilter = signal<'pending' | 'approved'>('pending');
+  readonly reviewFilter = signal<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+  readonly selectedReviewBusiness = signal<string>('all');
   readonly reviewMsg = signal('');
   readonly reviewLoading = signal(false);
+
+  readonly selectedBusinessName = computed(() => {
+    const id = this.selectedReviewBusiness();
+    if (id === 'all') return 'Todos los negocios';
+    return this.businessName(id);
+  });
 
   readonly pendingReviews = computed(
     () => this.stats()?.pendingReviews ?? 0
@@ -160,8 +194,13 @@ export class AdminPage implements OnInit {
   });
 
   ngOnInit() {
-    if (this.auth.authed()) this.load();
+    if (!this.auth.authed() || this.auth.user()?.role !== 'admin') {
+      this.router.navigate(['/login']);
+      return;
+    }
+    this.load();
   }
+
 
   topCategories(): string {
     const s = this.stats();
@@ -192,16 +231,26 @@ export class AdminPage implements OnInit {
   }
 
   loadReviews() {
+    this.reviewLoading.set(true);
     this.api
-      .adminReviews({ status: this.reviewFilter() })
+      .adminReviews({
+        businessId: this.selectedReviewBusiness(),
+        status: this.reviewFilter(),
+      })
       .subscribe({
-        next: (r) => this.reviews.set(r),
-        error: () => this.reviews.set([]),
+        next: (r) => {
+          this.reviews.set(r);
+          this.reviewLoading.set(false);
+        },
+        error: () => {
+          this.reviews.set([]);
+          this.reviewLoading.set(false);
+        },
       });
   }
 
   businessName(id: string): string {
-    return this.businesses().find((b) => b._id === id)?.name ?? id;
+    return this.businesses().find((b) => b._id === id || String(b._id) === String(id))?.name ?? id;
   }
 
   categoryName(id: string): string {
@@ -211,15 +260,31 @@ export class AdminPage implements OnInit {
   toggleReviews() {
     this.showReviews.set(!this.showReviews());
     if (this.showReviews()) {
-      this.reviewFilter.set('pending');
       this.reviewMsg.set('');
       this.loadReviews();
     }
   }
 
-  setReviewFilter(f: 'pending' | 'approved') {
+  setReviewFilter(f: 'pending' | 'approved' | 'rejected' | 'all') {
     this.reviewFilter.set(f);
     this.loadReviews();
+  }
+
+  setReviewBusiness(bizId: string) {
+    this.selectedReviewBusiness.set(bizId);
+    this.loadReviews();
+  }
+
+  openBusinessReviews(b: Business) {
+    if (!b._id) return;
+    this.selectedReviewBusiness.set(b._id);
+    this.reviewFilter.set('all');
+    this.showReviews.set(true);
+    this.reviewMsg.set(`Visualizando comentarios de "${b.name}"`);
+    this.loadReviews();
+    setTimeout(() => {
+      document.querySelector('.reviews-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   }
 
   approveReview(r: Review) {
@@ -227,7 +292,7 @@ export class AdminPage implements OnInit {
     this.api.setReviewApproved(r._id, true).subscribe({
       next: () => {
         this.reviewLoading.set(false);
-        this.reviewMsg.set('Reseña aprobada y publicada.');
+        this.reviewMsg.set(`Comentario de "${r.userName}" aprobado y publicado exitosamente.`);
         this.loadReviews();
         this.refreshStats();
       },
@@ -238,12 +303,31 @@ export class AdminPage implements OnInit {
     });
   }
 
+  rejectReview(r: Review) {
+    this.reviewLoading.set(true);
+    this.api.rejectReview(r._id).subscribe({
+      next: () => {
+        this.reviewLoading.set(false);
+        this.reviewMsg.set(`Comentario de "${r.userName}" rechazado (no publicado).`);
+        this.loadReviews();
+        this.refreshStats();
+      },
+      error: (e) => {
+        this.reviewLoading.set(false);
+        this.reviewMsg.set(e.error?.message || 'Error al rechazar');
+      },
+    });
+  }
+
   deleteReview(r: Review) {
+    if (!confirm(`¿Eliminar definitivamente el comentario de "${r.userName}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
     this.reviewLoading.set(true);
     this.api.deleteReview(r._id).subscribe({
       next: () => {
         this.reviewLoading.set(false);
-        this.reviewMsg.set('Reseña eliminada.');
+        this.reviewMsg.set('Comentario eliminado permanentemente.');
         this.loadReviews();
         this.refreshStats();
       },
@@ -300,22 +384,67 @@ export class AdminPage implements OnInit {
     });
   }
 
-  doLogin() {
-    this.api.login(this.username(), this.password()).subscribe({
-      next: (r) => {
-        this.auth.setSession(r);
-        this.error.set('');
-        this.load();
-      },
-      error: () => this.error.set('Credenciales inválidas'),
-    });
+  toggleAdminPayment(method: string) {
+    const f = this.editing();
+    if (!f) return;
+    const current = textToList(f.paymentMethodsText);
+    const exists = current.some((m) => m.toLowerCase() === method.toLowerCase());
+    const next = exists
+      ? current.filter((m) => m.toLowerCase() !== method.toLowerCase())
+      : [...current, method];
+    f.paymentMethodsText = listToText(next);
+  }
+
+  isAdminPaymentSelected(method: string): boolean {
+    const f = this.editing();
+    if (!f) return false;
+    return textToList(f.paymentMethodsText).some(
+      (m) => m.toLowerCase() === method.toLowerCase()
+    );
+  }
+
+  addAdminCustomPayment() {
+    const val = this.adminCustomPaymentInput().trim();
+    if (!val) return;
+    this.toggleAdminPayment(val);
+    this.adminCustomPaymentInput.set('');
+  }
+
+  removeAdminPayment(method: string) {
+    const f = this.editing();
+    if (!f) return;
+    const next = textToList(f.paymentMethodsText).filter((m) => m.toLowerCase() !== method.toLowerCase());
+    f.paymentMethodsText = listToText(next);
+  }
+
+  adminSelectedPayments(): string[] {
+    const f = this.editing();
+    if (!f) return [];
+    return textToList(f.paymentMethodsText);
+  }
+
+  getAdminPaymentIcon(method: string): string {
+    const found = this.standardPaymentOptions.find(
+      (o) => o.label.toLowerCase() === method.toLowerCase() || o.id.toLowerCase() === method.toLowerCase()
+    );
+    return found?.icon || '💳';
+  }
+
+
+  private clearContactErrors() {
+    this.phoneError.set('');
+    this.whatsappError.set('');
+    this.emailError.set('');
+    this.websiteError.set('');
   }
 
   newBusiness() {
+    this.clearContactErrors();
     this.editing.set(emptyForm());
   }
 
   editBusiness(b: Business) {
+    this.clearContactErrors();
     this.editing.set({
       _id: b._id,
       name: b.name,
@@ -353,8 +482,50 @@ export class AdminPage implements OnInit {
   }
 
   cancelEdit() {
+    this.clearContactErrors();
     this.editing.set(null);
     this.error.set('');
+  }
+
+  @HostListener('window:keydown.escape')
+  onEscapePress() {
+    if (this.editing()) {
+      this.cancelEdit();
+    }
+  }
+
+  onBackdropClick(event: MouseEvent) {
+    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+      this.cancelEdit();
+    }
+  }
+
+  onPhoneInput(raw: string) {
+    const cleaned = cleanPhoneInput(raw);
+    if (this.editing()) this.editing()!.phone = cleaned;
+    const v = validatePhone(cleaned, false);
+    this.phoneError.set(v.valid ? '' : (v.error || ''));
+  }
+
+  onWhatsAppInput(raw: string) {
+    const cleaned = cleanWhatsAppInput(raw);
+    if (this.editing()) this.editing()!.whatsapp = cleaned;
+    const v = validateWhatsApp(cleaned, false);
+    this.whatsappError.set(v.valid ? '' : (v.error || ''));
+  }
+
+  onEmailInput(raw: string) {
+    const cleaned = cleanEmailInput(raw);
+    if (this.editing()) this.editing()!.email = cleaned;
+    const v = validateEmail(cleaned, false);
+    this.emailError.set(v.valid ? '' : (v.error || ''));
+  }
+
+  onWebsiteInput(raw: string) {
+    const cleaned = cleanWebsiteInput(raw);
+    if (this.editing()) this.editing()!.website = cleaned;
+    const v = validateWebsite(cleaned, false);
+    this.websiteError.set(v.valid ? '' : (v.error || ''));
   }
 
   parseNumber(value: unknown): number {
@@ -366,6 +537,21 @@ export class AdminPage implements OnInit {
     if (!f) return;
     if (!f.name.trim() || !f.categoryId) {
       this.error.set('Nombre y categoría son obligatorios');
+      return;
+    }
+
+    const phoneRes = validatePhone(f.phone, false);
+    const waRes = validateWhatsApp(f.whatsapp, false);
+    const emailRes = validateEmail(f.email, false);
+    const webRes = validateWebsite(f.website, false);
+
+    this.phoneError.set(phoneRes.valid ? '' : (phoneRes.error || ''));
+    this.whatsappError.set(waRes.valid ? '' : (waRes.error || ''));
+    this.emailError.set(emailRes.valid ? '' : (emailRes.error || ''));
+    this.websiteError.set(webRes.valid ? '' : (webRes.error || ''));
+
+    if (!phoneRes.valid || !waRes.valid || !emailRes.valid || !webRes.valid) {
+      this.error.set('Por favor corrige los datos de contacto con formato incorrecto');
       return;
     }
 
@@ -392,7 +578,7 @@ export class AdminPage implements OnInit {
       promoStart: f.promoStart.trim(),
       promoEnd: f.promoEnd.trim(),
       email: f.email.trim(),
-      website: f.website.trim(),
+      website: normalizeWebsiteUrl(f.website.trim()),
       instagram: f.instagram.trim(),
       facebook: f.facebook.trim(),
       servicios: textToList(f.serviciosText),

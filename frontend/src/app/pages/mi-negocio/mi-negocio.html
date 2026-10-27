@@ -1,54 +1,15 @@
 <div class="wrap">
   @if (!auth.authed()) {
-    <form class="login-form" (ngSubmit)="login()">
+    <div class="card notice">
       <div class="login-head">
         <span class="monogram">M</span>
-        <h1>Mis negocios</h1>
-        <p>Gestiona los datos, horarios, fotos y promociones de tus negocios.</p>
+        <h1>Inicia sesión para gestionar tus negocios</h1>
+        <p>Debes identificarte con tu cuenta para acceder a la gestión de negocios.</p>
       </div>
-      <label class="field">
-        Usuario
-        <input
-          type="text"
-          autocomplete="username"
-          placeholder="usuario"
-          [value]="username()"
-          (input)="username.set($any($event.target).value)"
-        />
-      </label>
-      <label class="field">
-        Contraseña
-        <span class="pwd-wrap">
-          <input
-            [type]="showPassword() ? 'text' : 'password'"
-            autocomplete="current-password"
-            placeholder="••••••••"
-            [value]="password()"
-            (input)="password.set($any($event.target).value)"
-          />
-          <button
-            type="button"
-            class="pwd-toggle"
-            (click)="showPassword.set(!showPassword())"
-          >
-            {{ showPassword() ? 'Ocultar' : 'Ver' }}
-          </button>
-        </span>
-      </label>
-      @if (error()) {
-        <p class="err">{{ error() }}</p>
-      }
-      <button type="submit" class="submit">Entrar</button>
-      <details class="demo">
-        <summary>Cuentas de demostración</summary>
-        <p>
-          Hay una cuenta por negocio: el <strong>usuario</strong> es el nombre corto del
-          negocio (ej. <code>comedor-mili-san-raymundo</code>) y la
-          <strong>contraseña</strong> es <code>owner123</code>.
-        </p>
-      </details>
-    </form>
+      <a routerLink="/login" class="btn primary" style="margin-top: 1rem; display: inline-block;">Ir a Iniciar Sesión →</a>
+    </div>
   } @else if (user()?.role !== 'owner' && user()?.role !== 'admin') {
+
     <div class="card notice">
       <h1>Mis negocios</h1>
       <p>Este espacio es para los dueños de negocios.</p>
@@ -163,6 +124,7 @@
       }
     </div>
 
+
     <form class="card form" (ngSubmit)="save()">
       @if (activeTab() === 'datos') {
         <label>
@@ -204,70 +166,422 @@
             Teléfono
             <input
               type="tel"
+              inputmode="tel"
+              placeholder="+502 5555 0000"
+              [class.input-invalid]="phoneError()"
               [value]="form().phone"
-              (input)="set('phone', $any($event.target).value)"
+              (input)="onPhoneChange($any($event.target).value)"
             />
+            @if (phoneError()) {
+              <span class="field-error-text">⚠ {{ phoneError() }}</span>
+            }
           </label>
           <label>
             WhatsApp
             <input
               type="tel"
+              inputmode="tel"
+              placeholder="502 5555 0000"
+              [class.input-invalid]="whatsappError()"
               [value]="form().whatsapp"
-              (input)="set('whatsapp', $any($event.target).value)"
+              (input)="onWhatsAppChange($any($event.target).value)"
             />
+            @if (whatsappError()) {
+              <span class="field-error-text">⚠ {{ whatsappError() }}</span>
+            }
           </label>
+        </div>
+        <div class="field full price-picker-block">
+          <div class="price-header">
+            <span class="field-title">Rango de precios del negocio</span>
+            <span class="current-price-pill">{{ currentPriceOption().badge }} · {{ currentPriceOption().label }}</span>
+          </div>
+          <p class="field-desc">
+            Indica el nivel de precios para que los clientes identifiquen fácilmente tu propuesta de valor:
+          </p>
+          <div class="price-cards-grid">
+            @for (opt of priceOptions; track opt.value) {
+              <button
+                type="button"
+                class="price-card-btn"
+                [class.active]="form().priceRange === opt.value"
+                (click)="set('priceRange', opt.value)"
+              >
+                <div class="price-card-head">
+                  <span class="price-card-icon">{{ opt.icon }}</span>
+                  <span class="price-card-badge">{{ opt.badge }}</span>
+                  <span class="price-card-label">{{ opt.label }}</span>
+                  @if (form().priceRange === opt.value) {
+                    <span class="price-card-check">✓</span>
+                  }
+                </div>
+                <div class="price-card-desc">{{ opt.description }}</div>
+                <div class="price-card-hint">{{ opt.hint }}</div>
+              </button>
+            }
+          </div>
         </div>
         <div class="two">
           <label>
-            Rango de precio
-            <select [value]="form().priceRange" (change)="set('priceRange', $any($event.target).value)">
-              <option>$</option>
-              <option>$$</option>
-              <option>$$$</option>
-            </select>
+            Latitud
+            <input
+              type="number"
+              step="any"
+              placeholder="14.7646"
+              [value]="form().latitude"
+              (input)="set('latitude', parseNumber($any($event.target).value))"
+            />
           </label>
-          <div class="two">
-            <label>
-              Latitud
-              <input
-                type="number"
-                step="any"
-                placeholder="14.7646"
-                [value]="form().latitude"
-                (input)="set('latitude', parseNumber($any($event.target).value))"
-              />
-            </label>
-            <label>
-              Longitud
-              <input
-                type="number"
-                step="any"
-                placeholder="-90.5949"
-                [value]="form().longitude"
-                (input)="set('longitude', parseNumber($any($event.target).value))"
-              />
-            </label>
-          </div>
+          <label>
+            Longitud
+            <input
+              type="number"
+              step="any"
+              placeholder="-90.5949"
+              [value]="form().longitude"
+              (input)="set('longitude', parseNumber($any($event.target).value))"
+            />
+          </label>
         </div>
       }
 
       @if (activeTab() === 'horarios') {
-        <label for="hours">
-          Horarios (una línea por día o rango)
-          <textarea
-            id="hours"
-            rows="8"
-            placeholder="Lunes a Viernes: 07:00 - 18:00&#10;Sábado: 08:00 - 13:00&#10;Domingo: Cerrado"
-            [value]="form().hoursText"
-            (input)="set('hoursText', $any($event.target).value)"
-          ></textarea>
-        </label>
-        <p class="hint">
-          Usa <strong>Día: horario</strong>. El estado "Abierto ahora" se calcula
-          automáticamente con tu hora local. Admite rangos como
-          <em>Lunes a Viernes</em>, múltiples días (<em>Viernes y Sábado</em>) y
-          <em>Cerrado</em> o <em>Cita previa</em>.
-        </p>
+        <div class="schedule-container">
+          <div class="schedule-top-bar">
+            <div>
+              <h2 class="schedule-title">Configuración de Horarios de Atención</h2>
+              <p class="schedule-subtitle">
+                Define cuándo está abierto tu negocio. Tus clientes verán estos horarios y el estado en tiempo real.
+              </p>
+            </div>
+            <div class="live-status-pill" [class.is-open]="isOpenNowCalculated()">
+              <span class="status-dot"></span>
+              <span>{{ isOpenNowCalculated() ? 'Abierto ahora' : 'Cerrado ahora' }}</span>
+            </div>
+          </div>
+
+          <!-- Selector de Modalidad -->
+          <div class="schedule-mode-nav">
+            <button
+              type="button"
+              class="mode-btn"
+              [class.active]="scheduleMode() === 'weekdays-weekend'"
+              (click)="setScheduleMode('weekdays-weekend')"
+            >
+              <span class="mode-icon">🏢</span>
+              <span class="mode-name">Entre semana y fines de semana</span>
+            </button>
+            <button
+              type="button"
+              class="mode-btn"
+              [class.active]="scheduleMode() === 'daily'"
+              (click)="setScheduleMode('daily')"
+            >
+              <span class="mode-icon">📆</span>
+              <span class="mode-name">Día a día</span>
+            </button>
+            <button
+              type="button"
+              class="mode-btn"
+              [class.active]="scheduleMode() === 'custom'"
+              (click)="setScheduleMode('custom')"
+            >
+              <span class="mode-icon">⚙️</span>
+              <span class="mode-name">Horario personalizado</span>
+            </button>
+          </div>
+
+          <!-- MODO 1: Entre semana y fin de semana -->
+          @if (scheduleMode() === 'weekdays-weekend') {
+            <div class="schedule-card-group">
+              <!-- Entre semana: Lunes a Viernes -->
+              <div class="schedule-block-card" [class.disabled-block]="!weekdaysConfig().weekdaysOpen">
+                <div class="block-header">
+                  <div class="block-info">
+                    <span class="block-badge">Lunes a Viernes</span>
+                    <span class="block-sub">Días laborables entre semana</span>
+                  </div>
+                  <label class="toggle-label">
+                    <input
+                      type="checkbox"
+                      [checked]="weekdaysConfig().weekdaysOpen"
+                      (change)="updateWeekdays('weekdaysOpen', $any($event.target).checked)"
+                    />
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">{{ weekdaysConfig().weekdaysOpen ? 'Abierto' : 'Cerrado' }}</span>
+                  </label>
+                </div>
+
+                @if (weekdaysConfig().weekdaysOpen) {
+                  <div class="block-body">
+                    <label class="inline-checkbox">
+                      <input
+                        type="checkbox"
+                        [checked]="weekdaysConfig().weekdaysAppointment"
+                        (change)="updateWeekdays('weekdaysAppointment', $any($event.target).checked)"
+                      />
+                      <span>Atención únicamente con Cita Previa</span>
+                    </label>
+
+                    @if (!weekdaysConfig().weekdaysAppointment) {
+                      <div class="time-range-row">
+                        <div class="time-field">
+                          <span class="time-label">Apertura</span>
+                          <input
+                            type="time"
+                            [value]="weekdaysConfig().weekdaysStart"
+                            (change)="updateWeekdays('weekdaysStart', $any($event.target).value)"
+                          />
+                        </div>
+                        <span class="time-sep">a</span>
+                        <div class="time-field">
+                          <span class="time-label">Cierre</span>
+                          <input
+                            type="time"
+                            [value]="weekdaysConfig().weekdaysEnd"
+                            (change)="updateWeekdays('weekdaysEnd', $any($event.target).value)"
+                          />
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Sábado -->
+              <div class="schedule-block-card" [class.disabled-block]="!weekdaysConfig().saturdayOpen">
+                <div class="block-header">
+                  <div class="block-info">
+                    <span class="block-badge weekend">Sábado</span>
+                    <span class="block-sub">Fin de semana</span>
+                  </div>
+                  <label class="toggle-label">
+                    <input
+                      type="checkbox"
+                      [checked]="weekdaysConfig().saturdayOpen"
+                      (change)="updateWeekdays('saturdayOpen', $any($event.target).checked)"
+                    />
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">{{ weekdaysConfig().saturdayOpen ? 'Abierto' : 'Cerrado' }}</span>
+                  </label>
+                </div>
+
+                @if (weekdaysConfig().saturdayOpen) {
+                  <div class="block-body">
+                    <label class="inline-checkbox">
+                      <input
+                        type="checkbox"
+                        [checked]="weekdaysConfig().saturdayAppointment"
+                        (change)="updateWeekdays('saturdayAppointment', $any($event.target).checked)"
+                      />
+                      <span>Atención únicamente con Cita Previa</span>
+                    </label>
+
+                    @if (!weekdaysConfig().saturdayAppointment) {
+                      <div class="time-range-row">
+                        <div class="time-field">
+                          <span class="time-label">Apertura</span>
+                          <input
+                            type="time"
+                            [value]="weekdaysConfig().saturdayStart"
+                            (change)="updateWeekdays('saturdayStart', $any($event.target).value)"
+                          />
+                        </div>
+                        <span class="time-sep">a</span>
+                        <div class="time-field">
+                          <span class="time-label">Cierre</span>
+                          <input
+                            type="time"
+                            [value]="weekdaysConfig().saturdayEnd"
+                            (change)="updateWeekdays('saturdayEnd', $any($event.target).value)"
+                          />
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Domingo -->
+              <div class="schedule-block-card" [class.disabled-block]="!weekdaysConfig().sundayOpen">
+                <div class="block-header">
+                  <div class="block-info">
+                    <span class="block-badge sunday">Domingo</span>
+                    <span class="block-sub">Fin de semana</span>
+                  </div>
+                  <label class="toggle-label">
+                    <input
+                      type="checkbox"
+                      [checked]="weekdaysConfig().sundayOpen"
+                      (change)="updateWeekdays('sundayOpen', $any($event.target).checked)"
+                    />
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">{{ weekdaysConfig().sundayOpen ? 'Abierto' : 'Cerrado' }}</span>
+                  </label>
+                </div>
+
+                @if (weekdaysConfig().sundayOpen) {
+                  <div class="block-body">
+                    <label class="inline-checkbox">
+                      <input
+                        type="checkbox"
+                        [checked]="weekdaysConfig().sundayAppointment"
+                        (change)="updateWeekdays('sundayAppointment', $any($event.target).checked)"
+                      />
+                      <span>Atención únicamente con Cita Previa</span>
+                    </label>
+
+                    @if (!weekdaysConfig().sundayAppointment) {
+                      <div class="time-range-row">
+                        <div class="time-field">
+                          <span class="time-label">Apertura</span>
+                          <input
+                            type="time"
+                            [value]="weekdaysConfig().sundayStart"
+                            (change)="updateWeekdays('sundayStart', $any($event.target).value)"
+                          />
+                        </div>
+                        <span class="time-sep">a</span>
+                        <div class="time-field">
+                          <span class="time-label">Cierre</span>
+                          <input
+                            type="time"
+                            [value]="weekdaysConfig().sundayEnd"
+                            (change)="updateWeekdays('sundayEnd', $any($event.target).value)"
+                          />
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- MODO 2: Día a día -->
+          @if (scheduleMode() === 'daily') {
+            <div class="daily-schedule-section">
+              <div class="daily-actions-bar">
+                <span class="daily-hint">Configura el horario detallado para cada día:</span>
+                <div class="daily-quick-btns">
+                  <button type="button" class="btn-mini" (click)="copyMondayToWeekdays()">
+                    📋 Copiar Lunes a Martes-Viernes
+                  </button>
+                  <button type="button" class="btn-mini" (click)="copyMondayToAll()">
+                    🔁 Copiar Lunes a toda la semana
+                  </button>
+                </div>
+              </div>
+
+              <div class="days-list">
+                @for (d of daysConfig(); track d.day; let idx = $index) {
+                  <div class="day-item-row" [class.is-closed]="!d.isOpen">
+                    <div class="day-left">
+                      <span class="day-name" [class.weekend-day]="d.day === 'Sábado' || d.day === 'Domingo'">
+                        {{ d.day }}
+                      </span>
+                      <label class="toggle-label mini">
+                        <input
+                          type="checkbox"
+                          [checked]="d.isOpen"
+                          (change)="updateDay(idx, { isOpen: $any($event.target).checked })"
+                        />
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text">{{ d.isOpen ? 'Abierto' : 'Cerrado' }}</span>
+                      </label>
+                    </div>
+
+                    @if (d.isOpen) {
+                      <div class="day-right">
+                        <label class="inline-checkbox mini-check">
+                          <input
+                            type="checkbox"
+                            [checked]="d.isAppointment"
+                            (change)="updateDay(idx, { isAppointment: $any($event.target).checked })"
+                          />
+                          <span>Cita previa</span>
+                        </label>
+
+                        @if (!d.isAppointment) {
+                          <div class="day-times">
+                            <input
+                              type="time"
+                              class="time-input-sm"
+                              [value]="d.start"
+                              (change)="updateDay(idx, { start: $any($event.target).value })"
+                            />
+                            <span class="time-hyphen">-</span>
+                            <input
+                              type="time"
+                              class="time-input-sm"
+                              [value]="d.end"
+                              (change)="updateDay(idx, { end: $any($event.target).value })"
+                            />
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <div class="day-right closed-note">
+                        <span>Cerrado este día</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- MODO 3: Horario Personalizado -->
+          @if (scheduleMode() === 'custom') {
+            <div class="custom-schedule-section">
+              <div class="custom-presets-block">
+                <span class="presets-title">⚡ Plantillas rápidas de horario:</span>
+                <div class="presets-grid">
+                  @for (p of schedulePresets; track p.id) {
+                    <button
+                      type="button"
+                      class="preset-card-btn"
+                      (click)="applyPreset(p)"
+                    >
+                      <span class="preset-icon">{{ p.icon }}</span>
+                      <div class="preset-content">
+                        <strong>{{ p.title }}</strong>
+                        <small>{{ p.description }}</small>
+                      </div>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="custom-editor-block">
+                <label for="hours-custom" class="custom-editor-label">
+                  Editor de líneas de horario personalizadas
+                  <textarea
+                    id="hours-custom"
+                    rows="6"
+                    placeholder="Lunes a Viernes: 07:00 - 18:00&#10;Sábado: 08:00 - 13:00&#10;Domingo: Cerrado"
+                    [value]="form().hoursText"
+                    (input)="onCustomHoursChange($any($event.target).value)"
+                  ></textarea>
+                </label>
+                <p class="hint">
+                  Escribe una línea por día o rango con el formato <strong>Día: horario</strong> (ej. <em>Lunes a Jueves: 10:00 - 20:00</em>, <em>Viernes y Sábado: 10:00 - 23:00</em>, o <em>Domingo: Cerrado</em>).
+                </p>
+              </div>
+            </div>
+          }
+
+          <!-- Resumen / Vista Previa Resultante -->
+          <div class="schedule-summary-card">
+            <div class="summary-head">
+              <span class="summary-title">👁️ Vista previa del horario guardado</span>
+              <span class="summary-count">
+                {{ form().hoursText ? form().hoursText.split('\n').length : 0 }} regla(s) definidas
+              </span>
+            </div>
+            <pre class="summary-text">{{ form().hoursText || '(No se ha definido ningún horario)' }}</pre>
+          </div>
+        </div>
       }
 
       @if (activeTab() === 'fotos') {
@@ -275,78 +589,115 @@
           <div class="photos-header">
             <div>
               <h2 class="photos-title">📸 Imágenes de tu negocio</h2>
-              <p class="photos-subtitle">La primera imagen se usará como portada en el directorio.</p>
+              <p class="photos-subtitle">Administra la imagen principal y las fotos adicionales de tu negocio.</p>
             </div>
             <span class="photos-count">{{ photos().length }}/10 fotos</span>
           </div>
 
-          <!-- Drag & Drop Zone -->
-          <label
-            class="dropzone"
-            [class.uploading]="uploading()"
-            [class.has-photos]="photos().length > 0"
-            id="photo-dropzone"
-            (dragover)="$event.preventDefault()"
-            (drop)="onDrop($event)"
-          >
-            <input
-              id="photo-file-input"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              [disabled]="uploading()"
-              (change)="onFilesSelected($event)"
-            />
-            @if (uploading()) {
-              <div class="dropzone-uploading">
-                <span class="upload-spinner"></span>
-                <p>Subiendo {{ uploadingCount() }} foto{{ uploadingCount() !== 1 ? 's' : '' }}...</p>
-                <div class="upload-progress-bar">
-                  <div class="upload-progress-fill" [style.width.%]="uploadProgress()"></div>
-                </div>
-              </div>
-            } @else {
-              <div class="dropzone-idle">
-                <div class="dropzone-icon">🖼️</div>
-                <p class="dropzone-title">Arrastra tus imágenes aquí</p>
-                <p class="dropzone-sub">o haz clic para seleccionarlas</p>
-                <span class="dropzone-btn">Seleccionar imágenes</span>
-                <p class="dropzone-hint">JPG, PNG o WebP · máx. 10 MB · hasta 5 por carga</p>
-              </div>
-            }
-          </label>
-
-          <!-- Photo Grid -->
-          @if (photos().length) {
-            <div class="photo-grid">
-              @for (p of photos(); track p; let i = $index) {
-                <div class="photo-item" [class.is-cover]="i === 0">
-                  <img [src]="p" [alt]="'Foto ' + (i+1) + ' de ' + form().name" loading="lazy" />
-                  <div class="photo-overlay">
-                    <button
-                      type="button"
-                      class="photo-remove"
-                      (click)="removePhoto(p)"
-                      [attr.aria-label]="'Eliminar foto ' + (i+1)"
-                    >
-                      🗑 Eliminar
-                    </button>
+          <!-- IMAGEN PRINCIPAL -->
+          <div class="main-photo-section">
+            <h3 class="section-subtitle">⭐ Imagen principal (portada)</h3>
+            <p class="section-hint">Esta imagen aparecerá como portada en el directorio y en tu ficha pública.</p>
+            <div class="main-photo-area">
+              @if (mainPhoto()) {
+                <div class="main-photo-preview">
+                  <img [src]="mainPhoto()" [alt]="'Portada de ' + form().name" (click)="openImagePreview(mainPhoto())" />
+                  <div class="main-photo-actions">
+                    <label class="btn-change-main">
+                      📷 Cambiar imagen
+                      <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onMainPhotoSelected($event)" hidden />
+                    </label>
+                    <button type="button" class="btn-remove-main" (click)="removePhoto(mainPhoto())">🗑 Quitar</button>
                   </div>
-                  @if (i === 0) {
-                    <span class="cover-badge">⭐ Portada</span>
-                  } @else {
-                    <span class="photo-num">{{ i + 1 }}</span>
-                  }
+                  <span class="cover-badge">⭐ Portada</span>
                 </div>
+              } @else {
+                <label class="main-photo-empty">
+                  <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onMainPhotoSelected($event)" hidden />
+                  <div class="dropzone-icon">🖼️</div>
+                  <p class="dropzone-title">Sube la imagen principal</p>
+                  <p class="dropzone-sub">Haz clic para seleccionar</p>
+                  <span class="dropzone-btn">Seleccionar imagen</span>
+                  <p class="dropzone-hint">JPG, PNG o WebP · máx. 10 MB</p>
+                </label>
               }
             </div>
-          } @else {
-            <div class="photos-empty">
-              <span>📷</span>
-              <p>Aún no tienes fotos. Súbelas para que tu negocio destaque.</p>
-            </div>
-          }
+          </div>
+
+          <!-- FOTOS ADICIONALES -->
+          <div class="additional-photos-section">
+            <h3 class="section-subtitle">🖼️ Fotos adicionales</h3>
+            <p class="section-hint">Agrega más fotos para mostrar tu negocio, productos o servicios.</p>
+
+            <!-- Drag & Drop Zone para adicionales -->
+            <label
+              class="dropzone dropzone-small"
+              [class.uploading]="uploading()"
+              id="additional-photo-dropzone"
+              (dragover)="$event.preventDefault()"
+              (drop)="onDropAdditional($event)"
+            >
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                [disabled]="uploading()"
+                (change)="onAdditionalFilesSelected($event)"
+                hidden
+              />
+              @if (uploading()) {
+                <div class="dropzone-uploading">
+                  <span class="upload-spinner"></span>
+                  <p>Subiendo {{ uploadingCount() }} foto{{ uploadingCount() !== 1 ? 's' : '' }}...</p>
+                  <div class="upload-progress-bar">
+                    <div class="upload-progress-fill" [style.width.%]="uploadProgress()"></div>
+                  </div>
+                </div>
+              } @else {
+                <div class="dropzone-idle dropzone-idle-compact">
+                  <span class="dropzone-icon-sm">➕</span>
+                  <p class="dropzone-title">Arrastra imágenes aquí o haz clic para agregar</p>
+                  <p class="dropzone-hint">JPG, PNG o WebP · máx. 10 MB · hasta 5 por carga</p>
+                </div>
+              }
+            </label>
+
+            <!-- Lista de fotos adicionales -->
+            @if (additionalPhotos().length) {
+              <div class="additional-photos-list">
+                @for (p of additionalPhotos(); track p; let i = $index) {
+                  <div class="additional-photo-row">
+                    <img [src]="p" [alt]="'Foto ' + (i+2)" class="additional-thumb" (click)="openImagePreview(p)" />
+                    <div class="additional-info">
+                      <span class="additional-label">Foto {{ i + 2 }}</span>
+                      <div class="additional-actions">
+                        <button type="button" class="btn-mini" (click)="makeMainPhoto(p)" title="Establecer como principal">⭐ Portada</button>
+                        <button type="button" class="btn-mini" (click)="moveAdditionalPhoto(i, 'up')" [disabled]="i === 0" title="Mover arriba">▲</button>
+                        <button type="button" class="btn-mini" (click)="moveAdditionalPhoto(i, 'down')" [disabled]="i === additionalPhotos().length - 1" title="Mover abajo">▼</button>
+                        <button type="button" class="btn-mini danger" (click)="removePhoto(p)" title="Eliminar">🗑</button>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else if (!mainPhoto()) {
+              <div class="photos-empty">
+                <span>📷</span>
+                <p>Aún no tienes fotos. Súbelas para que tu negocio destaque.</p>
+              </div>
+            }
+          </div>
         </div>
+
+        <!-- Modal de preview de imagen -->
+        @if (previewImageModalUrl()) {
+          <div class="image-preview-overlay" (click)="closeImagePreview()">
+            <div class="image-preview-modal" (click)="$event.stopPropagation()">
+              <button type="button" class="image-preview-close" (click)="closeImagePreview()">✕</button>
+              <img [src]="previewImageModalUrl()!" alt="Vista previa" />
+            </div>
+          </div>
+        }
       }
 
       @if (activeTab() === 'promo') {
@@ -391,19 +742,29 @@
             Correo electrónico
             <input
               type="email"
+              inputmode="email"
               placeholder="contacto@mislocal.com"
+              [class.input-invalid]="emailError()"
               [value]="form().email"
-              (input)="set('email', $any($event.target).value)"
+              (input)="onEmailChange($any($event.target).value)"
             />
+            @if (emailError()) {
+              <span class="field-error-text">⚠ {{ emailError() }}</span>
+            }
           </label>
           <label>
             Sitio web
             <input
-              type="text"
+              type="url"
+              inputmode="url"
               placeholder="https://mislocal.com"
+              [class.input-invalid]="websiteError()"
               [value]="form().website"
-              (input)="set('website', $any($event.target).value)"
+              (input)="onWebsiteChange($any($event.target).value)"
             />
+            @if (websiteError()) {
+              <span class="field-error-text">⚠ {{ websiteError() }}</span>
+            }
           </label>
         </div>
         <div class="two">
@@ -494,16 +855,106 @@
           </div>
         }
 
-        <h2 class="promo-title">Métodos de pago</h2>
-        <label>
-          Métodos aceptados (uno por línea)
-          <textarea
-            rows="3"
-            placeholder="efectivo&#10;tarjeta&#10;transferencia"
-            [value]="form().paymentMethodsText"
-            (input)="set('paymentMethodsText', $any($event.target).value)"
-          ></textarea>
-        </label>
+        <h2 class="promo-title">💳 Métodos de pago aceptados</h2>
+        <p class="photos-subtitle">Selecciona los métodos de pago que acepta tu negocio con la lista emergente:</p>
+
+        <div class="payment-dropdown-wrap">
+          <button
+            type="button"
+            class="payment-dropdown-trigger"
+            (click)="togglePaymentDropdown()"
+          >
+            <span class="trigger-icon">💳</span>
+            <span class="trigger-text">
+              @if (selectedPaymentMethods().length === 0) {
+                Seleccionar métodos de pago...
+              } @else {
+                {{ selectedPaymentMethods().length }} método{{ selectedPaymentMethods().length !== 1 ? 's' : '' }} seleccionado{{ selectedPaymentMethods().length !== 1 ? 's' : '' }}
+              }
+            </span>
+            <span class="trigger-arrow">{{ paymentMethodsOpen() ? '▲' : '▼' }}</span>
+          </button>
+
+          @if (paymentMethodsOpen()) {
+            <div class="payment-dropdown-menu">
+              <div class="dropdown-tip">Selecciona los métodos disponibles:</div>
+              <div class="payment-options-list">
+                @for (opt of availablePaymentOptions; track opt.id) {
+                  <div
+                    class="payment-option-item"
+                    [class.selected]="isPaymentSelected(opt.label)"
+                    (click)="togglePaymentMethod(opt.label)"
+                  >
+                    <input
+                      type="checkbox"
+                      [checked]="isPaymentSelected(opt.label)"
+                      (click)="$event.stopPropagation(); togglePaymentMethod(opt.label)"
+                    />
+                    <span class="option-icon">{{ opt.icon }}</span>
+                    <div class="option-info">
+                      <span class="option-name">{{ opt.label }}</span>
+                      <span class="option-desc">{{ opt.desc }}</span>
+                    </div>
+                    @if (isPaymentSelected(opt.label)) {
+                      <span class="option-check">✓</span>
+                    }
+                  </div>
+                }
+              </div>
+
+              <div class="payment-custom-wrap">
+                <div class="payment-custom-input-group">
+                  <input
+                    type="text"
+                    placeholder="Otro método (ej. Criptomonedas, PayPal)..."
+                    [value]="customPaymentInput()"
+                    (input)="customPaymentInput.set($any($event.target).value)"
+                    (keydown.enter)="$event.preventDefault(); addCustomPaymentMethod()"
+                  />
+                  <button
+                    type="button"
+                    class="btn-add-custom-pay"
+                    (click)="addCustomPaymentMethod()"
+                    [disabled]="!customPaymentInput().trim()"
+                  >
+                    <span>➕</span> Agregar
+                  </button>
+                </div>
+              </div>
+
+              <div class="dropdown-footer">
+                <button type="button" class="btn-close-dropdown" (click)="paymentMethodsOpen.set(false)">
+                  <span>✓</span> Listo
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Chips de métodos seleccionados -->
+        <div class="selected-payments-container">
+          <span class="selected-payments-title">Métodos configurados:</span>
+          @if (selectedPaymentMethods().length === 0) {
+            <p class="no-payments-hint">No has seleccionado ningún método de pago aún. Despliega la lista superior para elegir.</p>
+          } @else {
+            <div class="payment-chips-list">
+              @for (m of selectedPaymentMethods(); track m) {
+                <span class="payment-chip">
+                  <span class="chip-icon">{{ getPaymentIcon(m) }}</span>
+                  <span class="chip-label">{{ m }}</span>
+                  <button
+                    type="button"
+                    class="chip-remove-btn"
+                    (click)="removePaymentMethod(m)"
+                    title="Quitar método"
+                  >
+                    ✕
+                  </button>
+                </span>
+              }
+            </div>
+          }
+        </div>
 
         <h2 class="promo-title">Ofertas estructuradas (varias por negocio)</h2>
         <label>

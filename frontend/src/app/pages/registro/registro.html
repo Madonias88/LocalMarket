@@ -44,36 +44,39 @@
           <div class="auth-welcome">
             👋 Hola, <strong>{{ auth.user()?.name || auth.user()?.username }}</strong>
           </div>
+
+          <!-- ===== STEPPER INSIDE HERO ===== -->
+          <div class="hero-stepper">
+            <!-- Progress bar -->
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="progress()"></div>
+            </div>
+
+            <!-- Step indicators -->
+            <div class="steps">
+              @for (s of steps; track $index) {
+                <button
+                  type="button"
+                  class="step-btn"
+                  [class.active]="step() === $index"
+                  [class.done]="step() > $index"
+                  (click)="goToStep($index)"
+                >
+                  <span class="step-icon">
+                    @if (step() > $index) { ✓ } @else { {{ s.icon }} }
+                  </span>
+                  <span class="step-label">{{ s.label }}</span>
+                </button>
+              }
+            </div>
+          </div>
         }
       </div>
     </div>
 
-    <!-- ===== STEPPER ===== -->
+    <!-- ===== FORM CARD ===== -->
     @if (auth.authed()) {
-      <div class="stepper-wrap">
-        <!-- Progress bar -->
-        <div class="progress-bar">
-          <div class="progress-fill" [style.width.%]="progress()"></div>
-        </div>
-
-        <!-- Step indicators -->
-        <div class="steps">
-          @for (s of steps; track $index) {
-            <button
-              class="step-btn"
-              [class.active]="step() === $index"
-              [class.done]="step() > $index"
-              (click)="goToStep($index)"
-            >
-              <span class="step-icon">
-                @if (step() > $index) { ✓ } @else { {{ s.icon }} }
-              </span>
-              <span class="step-label">{{ s.label }}</span>
-            </button>
-          }
-        </div>
-
-        <!-- ===== FORM CARD ===== -->
+      <div class="form-container">
         <div class="form-card">
 
           <!-- STEP 0: Información del negocio -->
@@ -114,10 +117,11 @@
                     [value]="form().priceRange"
                     (change)="set('priceRange', $any($event.target).value)"
                   >
-                    <option value="$">$ — Económico</option>
-                    <option value="$$">$$ — Moderado</option>
-                    <option value="$$$">$$$ — Premium</option>
+                    <option value="$">$ — Económico (Precios accesibles, menos de Q50)</option>
+                    <option value="$$">$$ — Moderado (Precios estándar, Q50 a Q150)</option>
+                    <option value="$$$">$$$ — Premium (Alta gama o gourmet, más de Q150)</option>
                   </select>
+                  <span class="field-hint">Nivel de precio promedio por persona o servicio</span>
                 </div>
                 <div class="field full">
                   <label for="biz-desc">Descripción</label>
@@ -137,59 +141,172 @@
           @if (step() === 1) {
             <div class="step-section" id="step-location">
               <div class="step-header">
-                <h2>📍 Ubicación</h2>
-                <p>¿Dónde están tus clientes? Añade tu dirección para aparecer en búsquedas locales.</p>
+                <h2>📍 Ubicación del negocio</h2>
+                <p>Escribe tu dirección o búscala en el mapa interactivo para que tus clientes te encuentren fácilmente.</p>
               </div>
+
               <div class="fields-grid">
-                <div class="field full">
-                  <label for="biz-address">Dirección</label>
-                  <input
-                    id="biz-address"
-                    type="text"
-                    placeholder="Ej. 3a. Calle 4-12, zona 1"
-                    [value]="form().address"
-                    (input)="set('address', $any($event.target).value)"
-                  />
+                <!-- Dirección con autocompletado en tiempo real -->
+                <div class="field full autocomplete-field">
+                  <div class="field-label-row">
+                    <label for="biz-address">Dirección</label>
+                    @if (reverseGeocoding()) {
+                      <span class="field-badge reverse-sync">📍 Obteniendo del mapa...</span>
+                    } @else {
+                      <span class="field-badge">Sugerencias en vivo</span>
+                    }
+                  </div>
+                  <div class="input-prefix-wrap">
+                    <span class="input-prefix">🏢</span>
+                    <input
+                      id="biz-address"
+                      type="text"
+                      autocomplete="off"
+                      placeholder="Ej. 3a Calle 4-12, San Raymundo..."
+                      [value]="form().address"
+                      (input)="onAddressInput($any($event.target).value)"
+                      (blur)="closeAddressSug()"
+                    />
+                    @if (geocoding() || reverseGeocoding()) {
+                      <span class="input-loading-spinner" title="Buscando dirección..."></span>
+                    }
+                  </div>
+
+                  <!-- Dropdown de sugerencias de dirección -->
+                  @if (showAddressSug() && addressSuggestions().length > 0) {
+                    <ul class="suggestions-list" id="address-suggestions">
+                      @for (sug of addressSuggestions(); track sug.place_id) {
+                        <li (mousedown)="selectAddress(sug)">
+                          <span class="sug-icon">📍</span>
+                          <div class="sug-content">
+                            <span class="sug-title">{{ sug.display_name.split(',')[0] }}</span>
+                            <span class="sug-desc">{{ sug.display_name }}</span>
+                          </div>
+                        </li>
+                      }
+                    </ul>
+                  }
                 </div>
-                <div class="field full">
-                  <label for="biz-zone">Zona / Municipio</label>
-                  <input
-                    id="biz-zone"
-                    type="text"
-                    placeholder="Ej. San Raymundo, San Juan Sacatepéquez"
-                    [value]="form().zone"
-                    (input)="set('zone', $any($event.target).value)"
-                  />
+
+                <!-- Zona / Municipio con autocompletado -->
+                <div class="field full autocomplete-field">
+                  <div class="field-label-row">
+                    <label for="biz-zone">Zona / Municipio</label>
+                    <span class="field-badge">Auto-completar</span>
+                  </div>
+                  <div class="input-prefix-wrap">
+                    <span class="input-prefix">🗺️</span>
+                    <input
+                      id="biz-zone"
+                      type="text"
+                      autocomplete="off"
+                      placeholder="Ej. San Raymundo, San Juan Sacatepéquez, Zona 1..."
+                      [value]="form().zone"
+                      (input)="onZoneInput($any($event.target).value)"
+                      (blur)="closeZoneSug()"
+                    />
+                  </div>
+
+                  <!-- Dropdown de sugerencias de zona -->
+                  @if (showZoneSug() && zoneSuggestions().length > 0) {
+                    <ul class="suggestions-list" id="zone-suggestions">
+                      @for (sug of zoneSuggestions(); track sug.place_id) {
+                        <li (mousedown)="selectZone(sug)">
+                          <span class="sug-icon">🏙️</span>
+                          <div class="sug-content">
+                            <span class="sug-title">{{ sug.display_name.split(',')[0] }}</span>
+                            <span class="sug-desc">{{ sug.display_name }}</span>
+                          </div>
+                        </li>
+                      }
+                    </ul>
+                  }
                 </div>
+
+                <!-- Mapa interactivo Leaflet -->
+                <div class="field full map-container-field">
+                  <div class="map-header-row">
+                    <div>
+                      <span class="map-title">📍 Mapa Interactivo (Punto exacto)</span>
+                      <p class="map-subtitle">
+                        Haz clic en el mapa o arrastra el marcador: <strong>la dirección se completará automáticamente</strong>.
+                      </p>
+                    </div>
+                    <button type="button" class="btn-gps" (click)="useCurrentLocation()" title="Detectar mi posición GPS">
+                      🎯 Mi ubicación GPS
+                    </button>
+                  </div>
+
+                  <div #locationMap id="location-map" class="interactive-map"></div>
+
+                  <!-- Barra de navegación y rutas externas -->
+                  <div class="map-navigation-bar">
+                    <div class="coords-display">
+                      <span class="coords-tag">
+                        <strong>Lat:</strong> {{ form().latitude || 'No fijada' }}
+                      </span>
+                      <span class="coords-tag">
+                        <strong>Lng:</strong> {{ form().longitude || 'No fijada' }}
+                      </span>
+                    </div>
+
+                    <div class="route-actions">
+                      <span class="route-label">Ver ruta en:</span>
+                      <a
+                        [href]="hasCoords() ? googleMapsUrl() : null"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="btn-route-action btn-gmaps"
+                        [class.disabled]="!hasCoords()"
+                        title="Ver ruta en Google Maps"
+                      >
+                        <svg class="nav-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                        Google Maps ↗
+                      </a>
+
+                      <a
+                        [href]="hasCoords() ? wazeUrl() : null"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="btn-route-action btn-waze"
+                        [class.disabled]="!hasCoords()"
+                        title="Ver ruta en Waze"
+                      >
+                        <span>🚗</span>
+                        Waze ↗
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Coordenadas exactas -->
                 <div class="field">
                   <label for="biz-lat">
-                    Latitud <span class="optional">(opcional)</span>
+                    Latitud <span class="optional">(actualizada por el mapa)</span>
                   </label>
                   <input
                     id="biz-lat"
                     type="number"
                     step="any"
-                    placeholder="14.7646"
+                    placeholder="14.6349"
                     [value]="form().latitude"
-                    (input)="set('latitude', $any($event.target).value)"
+                    (input)="onCoordsChange('latitude', $any($event.target).value)"
                   />
                 </div>
                 <div class="field">
                   <label for="biz-lng">
-                    Longitud <span class="optional">(opcional)</span>
+                    Longitud <span class="optional">(actualizada por el mapa)</span>
                   </label>
                   <input
                     id="biz-lng"
                     type="number"
                     step="any"
-                    placeholder="-90.5949"
+                    placeholder="-90.5069"
                     [value]="form().longitude"
-                    (input)="set('longitude', $any($event.target).value)"
+                    (input)="onCoordsChange('longitude', $any($event.target).value)"
                   />
-                </div>
-                <div class="field-info full">
-                  <span>💡</span>
-                  <p>Puedes obtener las coordenadas haciendo clic derecho en Google Maps → "¿Qué hay aquí?"</p>
                 </div>
               </div>
             </div>
@@ -204,60 +321,80 @@
               </div>
               <div class="fields-grid">
                 <div class="field">
-                  <label for="biz-phone">Teléfono</label>
-                  <div class="input-prefix-wrap">
+                  <label for="biz-phone">Teléfono <span class="optional">(mínimo 8 dígitos)</span></label>
+                  <div class="input-prefix-wrap" [class.has-error]="phoneError()">
                     <span class="input-prefix">📞</span>
                     <input
                       id="biz-phone"
                       type="tel"
+                      inputmode="tel"
                       placeholder="+502 5555 0000"
+                      [class.input-invalid]="phoneError()"
                       [value]="form().phone"
-                      (input)="set('phone', $any($event.target).value)"
+                      (input)="onPhoneInput($any($event.target).value)"
                     />
                   </div>
+                  @if (phoneError()) {
+                    <span class="field-error-text">⚠ {{ phoneError() }}</span>
+                  }
                 </div>
                 <div class="field">
-                  <label for="biz-wa">WhatsApp</label>
-                  <div class="input-prefix-wrap">
+                  <label for="biz-wa">WhatsApp <span class="optional">(mínimo 8 dígitos)</span></label>
+                  <div class="input-prefix-wrap" [class.has-error]="whatsappError()">
                     <span class="input-prefix">💬</span>
                     <input
                       id="biz-wa"
                       type="tel"
+                      inputmode="tel"
                       placeholder="502 5555 0000"
+                      [class.input-invalid]="whatsappError()"
                       [value]="form().whatsapp"
-                      (input)="set('whatsapp', $any($event.target).value)"
+                      (input)="onWhatsAppInput($any($event.target).value)"
                     />
                   </div>
+                  @if (whatsappError()) {
+                    <span class="field-error-text">⚠ {{ whatsappError() }}</span>
+                  }
                 </div>
                 <div class="field">
                   <label for="biz-email">
                     Correo del negocio <span class="optional">(opcional)</span>
                   </label>
-                  <div class="input-prefix-wrap">
+                  <div class="input-prefix-wrap" [class.has-error]="emailError()">
                     <span class="input-prefix">✉</span>
                     <input
                       id="biz-email"
                       type="email"
+                      inputmode="email"
                       placeholder="negocio@correo.com"
+                      [class.input-invalid]="emailError()"
                       [value]="form().email"
-                      (input)="set('email', $any($event.target).value)"
+                      (input)="onEmailInput($any($event.target).value)"
                     />
                   </div>
+                  @if (emailError()) {
+                    <span class="field-error-text">⚠ {{ emailError() }}</span>
+                  }
                 </div>
                 <div class="field">
                   <label for="biz-web">
                     Sitio web <span class="optional">(opcional)</span>
                   </label>
-                  <div class="input-prefix-wrap">
+                  <div class="input-prefix-wrap" [class.has-error]="websiteError()">
                     <span class="input-prefix">🌐</span>
                     <input
                       id="biz-web"
                       type="url"
-                      placeholder="https://minegocio.com"
+                      inputmode="url"
+                      placeholder="https://minegocio.com o www.minegocio.com"
+                      [class.input-invalid]="websiteError()"
                       [value]="form().website"
-                      (input)="set('website', $any($event.target).value)"
+                      (input)="onWebsiteInput($any($event.target).value)"
                     />
                   </div>
+                  @if (websiteError()) {
+                    <span class="field-error-text">⚠ {{ websiteError() }}</span>
+                  }
                 </div>
               </div>
             </div>
@@ -293,9 +430,23 @@
                   <span class="s-value">{{ form().address || '—' }}</span>
                 </div>
                 <div class="summary-item">
-                  <span class="s-label">Zona</span>
+                  <span class="s-label">Zona / Municipio</span>
                   <span class="s-value">{{ form().zone || '—' }}</span>
                 </div>
+                @if (hasCoords()) {
+                  <div class="summary-item full summary-location-links">
+                    <span class="s-label">Ubicación en mapa y rutas</span>
+                    <div class="summary-route-btns">
+                      <span class="coords-pill">📍 {{ form().latitude }}, {{ form().longitude }}</span>
+                      <a [href]="googleMapsUrl()" target="_blank" rel="noopener noreferrer" class="link-route-badge link-gmaps">
+                        Google Maps ↗
+                      </a>
+                      <a [href]="wazeUrl()" target="_blank" rel="noopener noreferrer" class="link-route-badge link-waze">
+                        Waze ↗
+                      </a>
+                    </div>
+                  </div>
+                }
                 <div class="summary-item">
                   <span class="s-label">Teléfono</span>
                   <span class="s-value">{{ form().phone || '—' }}</span>

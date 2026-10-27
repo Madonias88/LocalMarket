@@ -51,7 +51,8 @@ export class ApiService {
 
   private headers(admin = false): HttpHeaders {
     let h = new HttpHeaders();
-    if (admin) h = h.set('Authorization', `Bearer ${this.token()}`);
+    const token = this.token();
+    if (token) h = h.set('Authorization', `Bearer ${token}`);
     return h;
   }
 
@@ -95,21 +96,31 @@ export class ApiService {
   }
 
   submitReview(businessId: string, body: { userName: string; rating: number; comment: string }) {
-    return this.http.post<Review>(`${API_URL}/reviews/${businessId}`, body);
+    return this.http.post<Review>(`${API_URL}/reviews/${businessId}`, body, {
+      headers: this.headers(),
+    });
   }
 
-  adminReviews(params?: { businessId?: string; status?: 'pending' | 'approved' }) {
+  adminReviews(params?: { businessId?: string; status?: 'pending' | 'approved' | 'rejected' | 'all' }) {
     const qs = new URLSearchParams();
-    if (params?.businessId) qs.set('businessId', params.businessId);
-    if (params?.status) qs.set('status', params.status);
+    if (params?.businessId && params.businessId !== 'all') qs.set('businessId', params.businessId);
+    if (params?.status && params.status !== 'all') qs.set('status', params.status);
     const suffix = qs.size ? `?${qs}` : '';
     return this.http.get<Review[]>(`${API_URL}/reviews/admin/list${suffix}`, {
       headers: this.headers(true),
     });
   }
 
-  setReviewApproved(id: string, approved: boolean) {
-    return this.http.put<Review>(`${API_URL}/reviews/${id}`, { approved }, { headers: this.headers(true) });
+  setReviewApproved(id: string, approved: boolean, status?: 'pending' | 'approved' | 'rejected') {
+    return this.http.put<Review>(
+      `${API_URL}/reviews/${id}`,
+      { approved, status: status || (approved ? 'approved' : 'rejected') },
+      { headers: this.headers(true) }
+    );
+  }
+
+  rejectReview(id: string) {
+    return this.setReviewApproved(id, false, 'rejected');
   }
 
   deleteReview(id: string) {

@@ -8,6 +8,7 @@ import { PromosPage } from './pages/promos/promos';
 import { RegistroPage } from './pages/registro/registro';
 import { LoginPage } from './pages/login/login';
 import { BienvenidoPage } from './pages/bienvenido/bienvenido';
+import { authGuard, adminGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', component: LandingPage },
@@ -16,8 +17,9 @@ export const routes: Routes = [
   { path: 'promos', component: PromosPage },
   { path: 'login', component: LoginPage },
   { path: 'registro', component: RegistroPage },
-  { path: 'admin', component: AdminPage },
-  { path: 'mi-negocio', component: MiNegocioPage },
+  { path: 'admin', component: AdminPage, canActivate: [adminGuard] },
+  { path: 'mi-negocio', component: MiNegocioPage, canActivate: [authGuard] },
   { path: 'bienvenido', component: BienvenidoPage },
   { path: '**', redirectTo: '' },
-];
+];
+

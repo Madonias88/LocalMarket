@@ -170,7 +170,40 @@ const businessValidators = [
   body('latitude').optional({ values: 'falsy' }).isFloat({ min: -90, max: 90 }).withMessage('Latitud inválida'),
   body('longitude').optional({ values: 'falsy' }).isFloat({ min: -180, max: 180 }).withMessage('Longitud inválida'),
   body('rating').optional({ values: 'falsy' }).isFloat({ min: 0, max: 5 }).withMessage('El rating debe estar entre 0 y 5'),
-  body('email').optional({ values: 'falsy' }).trim().isEmail().withMessage('El correo electrónico es inválido'),
+  body('phone')
+    .optional({ values: 'falsy' })
+    .trim()
+    .matches(/^\+?[0-9\s\-()]{7,20}$/)
+    .withMessage('El teléfono contiene caracteres no permitidos')
+    .custom((val) => {
+      const digits = val.replace(/\D/g, '');
+      if (digits.length < 8 || digits.length > 15) {
+        throw new Error('El teléfono debe tener entre 8 y 15 dígitos');
+      }
+      return true;
+    }),
+  body('whatsapp')
+    .optional({ values: 'falsy' })
+    .trim()
+    .matches(/^\+?[0-9\s\-]{7,20}$/)
+    .withMessage('El WhatsApp contiene caracteres no permitidos')
+    .custom((val) => {
+      const digits = val.replace(/\D/g, '');
+      if (digits.length < 8 || digits.length > 15) {
+        throw new Error('El WhatsApp debe tener entre 8 y 15 dígitos');
+      }
+      return true;
+    }),
+  body('email')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isEmail()
+    .withMessage('El correo electrónico es inválido (ej. contacto@minegocio.com)'),
+  body('website')
+    .optional({ values: 'falsy' })
+    .trim()
+    .matches(/^(https?:\/\/)?(www\.)?[a-zA-Z0-9]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(:\d{1,5})?(\/.*)?$/i)
+    .withMessage('El sitio web no tiene un formato válido (ej. https://minegocio.com o www.minegocio.com)'),
   body('servicios').optional().isArray().withMessage('Servicios debe ser una lista'),
   body('tags').optional().isArray().withMessage('Etiquetas debe ser una lista'),
   body('deliveryZones').optional().isArray().withMessage('Zonas de entrega debe ser una lista'),
@@ -198,7 +231,12 @@ businessesRouter.get('/stats', requireAuth, requireAdmin, async (_req, res) => {
       Business.countDocuments(),
       Business.countDocuments({ active: true }),
       Business.countDocuments({ featured: true }),
-      Review.countDocuments({ approved: false }),
+      Review.countDocuments({
+        $or: [
+          { status: 'pending' },
+          { status: { $exists: false }, approved: false },
+        ],
+      }),
       Business.aggregate([
         { $match: { active: true } },
         { $group: { _id: '$categoryId', count: { $sum: 1 } } },

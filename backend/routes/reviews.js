@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
+import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 import Review from '../models/Review.js';
 import Business from '../models/Business.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
@@ -9,7 +11,7 @@ export const reviewsRouter = Router();
 
 const reviewValidators = [
   body('userName').trim().notEmpty().withMessage('Tu nombre es obligatorio').isLength({ max: 60 }).withMessage('El nombre es demasiado largo'),
-  body('rating').isInt({ min: 1, max: 5 }).withMessage('La calificación debe ser entre 1 y 5 estrellas'),
+  body('rating').isFloat({ min: 1, max: 5 }).withMessage('La calificación debe ser entre 1 y 5 estrellas'),
   body('comment')
     .optional({ values: 'falsy' })
     .trim()
@@ -27,11 +29,22 @@ function handleValidation(req, res, next) {
 
 /** Recalcula el rating de un negocio como promedio de sus resenas aprobadas. */
 async function recalcRating(businessId) {
-  const approved = await Review.find({ businessId, approved: true });
+  const objectId = mongoose.isValidObjectId(businessId) ? new mongoose.Types.ObjectId(businessId) : null;
+  const filter = objectId
+    ? { $or: [{ businessId: objectId }, { businessId: String(businessId) }], approved: true }
+    : { businessId, approved: true };
+
+  const approved = await Review.find(filter);
   const average = approved.length
-    ? Math.round((approved.reduce((sum, r) => sum + r.rating, 0) / approved.length) * 10) / 10
+    ? Math.round((approved.reduce((sum, r) => sum + Number(r.rating || 0), 0) / approved.length) * 10) / 10
     : 0;
-  await Business.updateOne({ _id: businessId }, { rating: average, reviewCount: approved.length });
+
+  const bizFilter = objectId
+    ? { $or: [{ _id: objectId }, { _id: String(businessId) }] }
+    : { _id: businessId };
+
+  await Business.updateOne(bizFilter, { rating: average, reviewCount: approved.length });
+  return { average, count: approved.length };
 }
 
 // Resenas aprobadas de un negocio + resumen (publico)
@@ -43,13 +56,15 @@ reviewsRouter.get('/:businessId', async (req, res) => {
     const business = await Business.findOne(query);
     if (!business) return res.status(404).json({ message: 'Negocio no encontrado' });
 
-    const reviews = await Review.find({
-      businessId: business._id,
-      approved: true,
-    }).sort({ createdAt: -1 });
+    const objectId = mongoose.isValidObjectId(business._id) ? new mongoose.Types.ObjectId(business._id) : null;
+    const filter = objectId
+      ? { $or: [{ businessId: objectId }, { businessId: String(business._id) }], approved: true }
+      : { businessId: business._id, approved: true };
+
+    const reviews = await Review.find(filter).sort({ createdAt: -1 });
 
     const average = reviews.length
-      ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10
+      ? Math.round((reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / reviews.length) * 10) / 10
       : 0;
 
     res.json({ reviews, count: reviews.length, average });
@@ -67,38 +82,74 @@ reviewsRouter.post('/:businessId', reviewValidators, handleValidation, async (re
     if (!business) return res.status(404).json({ message: 'Negocio no encontrado' });
 
     const { userName, rating, comment } = req.body;
+
+    let userId = undefined;
+    const authHeader = req.headers.authorization || '';
+    if (authHeader.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(
+          authHeader.slice(7),
+          process.env.JWT_SECRET || 'localmarket-dev-secret-cambiar-en-produccion'
+        );
+        if (decoded?.userId) userId = decoded.userId;
+      } catch {}
+    }
+
     const review = new Review({
       businessId: business._id,
+      userId,
       userName: userName.trim(),
       rating: Number(rating),
       comment: (comment || '').trim(),
-      approved: true, // Auto-aprobada para que se muestre de inmediato
+      approved: false, // En moderación: requiere aprobación del administrador para publicarse
+      status: 'pending',
     });
     await review.save();
-    await recalcRating(business._id);
-    res.status(201).json(review);
+    const stats = await recalcRating(business._id);
+    res.status(201).json({
+      ...review.toObject(),
+      businessRating: stats.average,
+      businessReviewCount: stats.count,
+    });
   } catch (err) {
     console.error('Error al crear resena:', err);
-    res.status(400).json({ message: 'No se pudo publicar la reseña' });
+    res.status(400).json({ message: 'No se pudo registrar la reseña' });
   }
 });
 
-// Moderacion: todas las resenas (pendientes primero). Solo admin.
+// Moderacion: resenas (con filtro por negocio y estado). Solo admin.
 reviewsRouter.get('/admin/list', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { businessId, status } = req.query;
-    const filter = {};
-    if (businessId) {
+    const conditions = [];
+
+    if (businessId && businessId !== 'all') {
       const query = getBusinessQuery(businessId);
       const biz = await Business.findOne(query);
-      if (biz) filter.businessId = biz._id;
-      else filter.businessId = businessId; // fallback
+      const targetId = biz ? biz._id : businessId;
+      const objectId = mongoose.isValidObjectId(targetId) ? new mongoose.Types.ObjectId(targetId) : null;
+      if (objectId) {
+        conditions.push({ $or: [{ businessId: objectId }, { businessId: String(targetId) }] });
+      } else {
+        conditions.push({ businessId: targetId });
+      }
     }
-    if (status === 'pending') filter.approved = false;
-    else if (status === 'approved') filter.approved = true;
+
+    if (status === 'pending') {
+      conditions.push({
+        $or: [{ status: 'pending' }, { status: { $exists: false }, approved: false }],
+      });
+    } else if (status === 'approved') {
+      conditions.push({
+        $or: [{ status: 'approved' }, { status: { $exists: false }, approved: true }],
+      });
+    } else if (status === 'rejected') {
+      conditions.push({ status: 'rejected' });
+    }
+
+    const filter = conditions.length > 0 ? { $and: conditions } : {};
 
     const reviews = await Review.find(filter).sort({
-      approved: 1,
       createdAt: -1,
     });
     res.json(reviews);
@@ -111,14 +162,25 @@ reviewsRouter.get('/admin/list', requireAuth, requireAdmin, async (req, res) => 
 // Aprobar / rechazar resena. Solo admin.
 reviewsRouter.put('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { approved } = req.body;
-    if (typeof approved !== 'boolean') {
-      return res.status(400).json({ message: 'El campo approved debe ser booleano' });
+    const { approved, status } = req.body;
+    const update = {};
+
+    if (typeof approved === 'boolean') {
+      update.approved = approved;
+      update.status = approved ? 'approved' : 'rejected';
+    }
+    if (status && ['pending', 'approved', 'rejected'].includes(status)) {
+      update.status = status;
+      update.approved = status === 'approved';
+    }
+
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ message: 'Se requiere el campo approved o status' });
     }
 
     const review = await Review.findByIdAndUpdate(
       req.params.id,
-      { approved },
+      update,
       { returnDocument: 'after' }
     );
     if (!review) return res.status(404).json({ message: 'Reseña no encontrada' });

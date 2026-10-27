@@ -5,6 +5,7 @@ export interface Review {
   rating: number;
   comment: string;
   approved: boolean;
+  status?: 'pending' | 'approved' | 'rejected';
   createdAt: string;
 }
 

@@ -1,4 +1,5 @@
 /* Estilos globales LocalMarket */
+@import 'leaflet/dist/leaflet.css';
 * {
   box-sizing: border-box;
 }

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -6,8 +6,37 @@ import { ApiService } from '../../services/api.service';
 import { AuthService, SessionUser } from '../../services/auth.service';
 import { QrViewComponent } from '../../components/qr-view/qr-view';
 import { listToText, textToList, promosToText, textToPromos } from '../../utils/lists';
+import {
+  PRICE_RANGE_OPTIONS,
+  PriceRangeOption,
+  getPriceRangeOption,
+} from '../../utils/price-range';
+import {
+  ScheduleMode,
+  DayRow,
+  WeekdayWeekendConfig,
+  DEFAULT_WEEKDAYS_WEEKEND,
+  createDefaultDays,
+  weekdayWeekendToText,
+  daysToText,
+  parseScheduleText,
+  SCHEDULE_PRESETS,
+  SchedulePreset,
+} from '../../utils/schedule-helpers';
+import { isOpenNow } from '../../utils/open-hours';
 import type { Business } from '../../models/business';
 import type { Category } from '../../models/category';
+import {
+  cleanPhoneInput,
+  cleanWhatsAppInput,
+  cleanEmailInput,
+  cleanWebsiteInput,
+  validatePhone,
+  validateWhatsApp,
+  validateEmail,
+  validateWebsite,
+  normalizeWebsiteUrl,
+} from '../../utils/form-validators';
 
 interface OwnerForm {
   name: string;
@@ -74,9 +103,6 @@ export class MiNegocioPage implements OnInit {
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly username = signal('');
-  readonly password = signal('');
-  readonly showPassword = signal(false);
   readonly error = signal('');
 
   readonly viewMode = signal<ViewMode>('grid');
@@ -93,6 +119,34 @@ export class MiNegocioPage implements OnInit {
   readonly showQr = signal(false);
 
   readonly business = signal<Business | null>(null);
+
+  readonly priceOptions = PRICE_RANGE_OPTIONS;
+  readonly schedulePresets = SCHEDULE_PRESETS;
+  readonly scheduleMode = signal<ScheduleMode>('weekdays-weekend');
+  readonly weekdaysConfig = signal<WeekdayWeekendConfig>({ ...DEFAULT_WEEKDAYS_WEEKEND });
+  readonly daysConfig = signal<DayRow[]>(createDefaultDays());
+
+  readonly previewImageModalUrl = signal<string | null>(null);
+
+  readonly availablePaymentOptions = [
+    { id: 'efectivo', label: 'Efectivo', icon: '💵', desc: 'Pago en efectivo (Quetzales)' },
+    { id: 'tarjeta', label: 'Tarjeta de crédito / débito', icon: '💳', desc: 'Visa, Mastercard u otras' },
+    { id: 'transferencia', label: 'Transferencia bancaria', icon: '🏦', desc: 'Depósito o transferencia bancaria' },
+    { id: 'contra_entrega', label: 'Pago contra entrega', icon: '📦', desc: 'Pago al momento de recibir el pedido' },
+    { id: 'billetera', label: 'Billetera digital', icon: '📱', desc: 'Tigo Money y pagos móviles' },
+    { id: 'credito', label: 'Crédito local / Fiado', icon: '🤝', desc: 'Para clientes de confianza' },
+    { id: 'cheque', label: 'Cheque', icon: '📝', desc: 'Cheque local' },
+  ];
+
+  readonly paymentMethodsOpen = signal(false);
+  readonly customPaymentInput = signal('');
+
+
+  readonly phoneError = signal('');
+  readonly whatsappError = signal('');
+  readonly emailError = signal('');
+  readonly websiteError = signal('');
+
   readonly form = signal<OwnerForm>({
     name: '',
     description: '',
@@ -123,35 +177,119 @@ export class MiNegocioPage implements OnInit {
   });
 
   ngOnInit() {
+    if (!this.auth.authed()) {
+      this.router.navigate(['/login']);
+      return;
+    }
     this.api.categories().subscribe({
       next: (cats) => this.categories.set(cats),
       error: () => {},
     });
-    if (this.auth.authed()) {
-      this.loadMyBusinesses();
-    }
+    this.loadMyBusinesses();
   }
 
   set<T>(key: keyof OwnerForm, value: T) {
     this.form.update((f) => ({ ...f, [key]: value }) as OwnerForm);
   }
 
+  onPhoneChange(raw: string) {
+    const cleaned = cleanPhoneInput(raw);
+    this.set('phone', cleaned);
+    const v = validatePhone(cleaned, false);
+    this.phoneError.set(v.valid ? '' : (v.error || ''));
+  }
+
+  onWhatsAppChange(raw: string) {
+    const cleaned = cleanWhatsAppInput(raw);
+    this.set('whatsapp', cleaned);
+    const v = validateWhatsApp(cleaned, false);
+    this.whatsappError.set(v.valid ? '' : (v.error || ''));
+  }
+
+  onEmailChange(raw: string) {
+    const cleaned = cleanEmailInput(raw);
+    this.set('email', cleaned);
+    const v = validateEmail(cleaned, false);
+    this.emailError.set(v.valid ? '' : (v.error || ''));
+  }
+
+  onWebsiteChange(raw: string) {
+    const cleaned = cleanWebsiteInput(raw);
+    this.set('website', cleaned);
+    const v = validateWebsite(cleaned, false);
+    this.websiteError.set(v.valid ? '' : (v.error || ''));
+  }
+
+  validateContacts(): boolean {
+    const f = this.form();
+    const phoneRes = validatePhone(f.phone, false);
+    const waRes = validateWhatsApp(f.whatsapp, false);
+    const emailRes = validateEmail(f.email, false);
+    const webRes = validateWebsite(f.website, false);
+
+    this.phoneError.set(phoneRes.valid ? '' : (phoneRes.error || ''));
+    this.whatsappError.set(waRes.valid ? '' : (waRes.error || ''));
+    this.emailError.set(emailRes.valid ? '' : (emailRes.error || ''));
+    this.websiteError.set(webRes.valid ? '' : (webRes.error || ''));
+
+    if (!phoneRes.valid || !waRes.valid || !emailRes.valid || !webRes.valid) {
+      this.error.set('Por favor corrige los campos de contacto señalados');
+      return false;
+    }
+    return true;
+  }
+
   parseNumber(value: unknown): number {
     return Number(value);
   }
 
-  login() {
-    this.api.login(this.username(), this.password()).subscribe({
-      next: (r) => {
-        this.auth.setSession(r);
-        this.error.set('');
-        this.loadMyBusinesses();
-      },
-      error: () => this.error.set('Credenciales inválidas'),
-    });
+  // --- MÉTODOS DE PAGO (LISTA EMERGENTE) ---
+  readonly selectedPaymentMethods = computed(() => {
+    return textToList(this.form().paymentMethodsText);
+  });
+
+  togglePaymentDropdown() {
+    this.paymentMethodsOpen.set(!this.paymentMethodsOpen());
+  }
+
+  isPaymentSelected(label: string): boolean {
+    return this.selectedPaymentMethods().some(
+      (m) => m.toLowerCase() === label.toLowerCase()
+    );
+  }
+
+  togglePaymentMethod(label: string) {
+    const current = this.selectedPaymentMethods();
+    const exists = current.some((m) => m.toLowerCase() === label.toLowerCase());
+    const next = exists
+      ? current.filter((m) => m.toLowerCase() !== label.toLowerCase())
+      : [...current, label];
+    this.set('paymentMethodsText', listToText(next));
+  }
+
+  removePaymentMethod(method: string) {
+    const current = this.selectedPaymentMethods();
+    const next = current.filter((m) => m.toLowerCase() !== method.toLowerCase());
+    this.set('paymentMethodsText', listToText(next));
+  }
+
+  addCustomPaymentMethod() {
+    const val = this.customPaymentInput().trim();
+    if (!val) return;
+    this.togglePaymentMethod(val);
+    this.customPaymentInput.set('');
+  }
+
+  getPaymentIcon(method: string): string {
+    const found = this.availablePaymentOptions.find(
+      (o) => o.label.toLowerCase() === method.toLowerCase() || o.id.toLowerCase() === method.toLowerCase()
+    );
+    return found?.icon || '💳';
   }
 
   loadMyBusinesses() {
+
+
     this.loading.set(true);
     this.error.set('');
     this.api.myBusinesses().subscribe({
@@ -170,6 +308,12 @@ export class MiNegocioPage implements OnInit {
     this.business.set(b);
     this.savedMsg.set('');
     this.error.set('');
+    const rawHours = hoursToText(b.hours);
+    const parsedSchedule = parseScheduleText(rawHours);
+    this.scheduleMode.set(parsedSchedule.mode);
+    this.weekdaysConfig.set(parsedSchedule.weekdaysConfig);
+    this.daysConfig.set(parsedSchedule.days);
+
     this.form.set({
       name: b.name,
       description: b.description,
@@ -179,9 +323,9 @@ export class MiNegocioPage implements OnInit {
       whatsapp: b.whatsapp,
       latitude: b.latitude,
       longitude: b.longitude,
-      priceRange: b.priceRange,
+      priceRange: b.priceRange || '$',
       photosText: (b.photoUrls ?? []).join('\n'),
-      hoursText: hoursToText(b.hours),
+      hoursText: rawHours,
       promoText: b.promoText ?? '',
       promoStart: b.promoStart ?? '',
       promoEnd: b.promoEnd ?? '',
@@ -219,28 +363,89 @@ export class MiNegocioPage implements OnInit {
     return textToList(this.form().photosText);
   }
 
+  mainPhoto(): string {
+    return this.photos()[0] || '';
+  }
+
+  additionalPhotos(): string[] {
+    return this.photos().slice(1);
+  }
+
+  openImagePreview(url: string) {
+    this.previewImageModalUrl.set(url);
+  }
+
+  closeImagePreview() {
+    this.previewImageModalUrl.set(null);
+  }
+
   /** Tras subir/eliminar una foto, refresca negocio y textarea sin tocar el resto del formulario. */
   private applyPhotoSync(updated: Business) {
     this.business.set(updated);
     this.form.update((f) => ({ ...f, photosText: (updated.photoUrls ?? []).join('\n') }));
   }
 
-  onDrop(event: DragEvent) {
-    event.preventDefault();
-    const files = Array.from(event.dataTransfer?.files ?? []);
-    if (!files.length) return;
-    this.uploadFiles(files);
-  }
-
-  onFilesSelected(event: Event) {
+  onMainPhotoSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
     if (!files.length) return;
-    this.uploadFiles(files);
+    this.uploadFiles(files, true);
     input.value = '';
   }
 
-  private uploadFiles(files: File[]) {
+  onAdditionalFilesSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    if (!files.length) return;
+    this.uploadFiles(files, false);
+    input.value = '';
+  }
+
+  onDropAdditional(event: DragEvent) {
+    event.preventDefault();
+    const files = Array.from(event.dataTransfer?.files ?? []);
+    if (!files.length) return;
+    this.uploadFiles(files, false);
+  }
+
+  makeMainPhoto(url: string) {
+    const current = this.photos();
+    if (!current.includes(url) || current[0] === url) return;
+    const reordered = [url, ...current.filter((u) => u !== url)];
+    this.form.update((f) => ({ ...f, photosText: reordered.join('\n') }));
+    const b = this.business();
+    if (b?._id) {
+      this.api.updateBusiness(b._id, { photoUrls: reordered }).subscribe({
+        next: (updated) => {
+          this.applyPhotoSync(updated);
+          this.savedMsg.set('Foto establecida como imagen principal.');
+        },
+        error: (e) => this.error.set(e?.error?.message || 'Error al actualizar foto principal'),
+      });
+    }
+  }
+
+  moveAdditionalPhoto(indexInAdditional: number, direction: 'up' | 'down') {
+    const additional = [...this.additionalPhotos()];
+    const targetIdx = direction === 'up' ? indexInAdditional - 1 : indexInAdditional + 1;
+    if (targetIdx < 0 || targetIdx >= additional.length) return;
+    const temp = additional[indexInAdditional];
+    additional[indexInAdditional] = additional[targetIdx];
+    additional[targetIdx] = temp;
+    const main = this.mainPhoto();
+    const reordered = main ? [main, ...additional] : additional;
+    this.form.update((f) => ({ ...f, photosText: reordered.join('\n') }));
+    const b = this.business();
+    if (b?._id) {
+      this.api.updateBusiness(b._id, { photoUrls: reordered }).subscribe({
+        next: (updated) => {
+          this.applyPhotoSync(updated);
+        },
+      });
+    }
+  }
+
+  private uploadFiles(files: File[], isMain: boolean = false) {
     const b = this.business();
     if (!b?._id) return;
 
@@ -275,9 +480,19 @@ export class MiNegocioPage implements OnInit {
     for (const file of files) {
       queue = queue
         .then(() => firstValueFrom(this.api.uploadPhoto(b._id!, file)))
-        .then((r) => {
-          this.applyPhotoSync(r.business);
+        .then(async (r) => {
           okCount++;
+          if (isMain) {
+            const allUrls = r.business?.photoUrls || r.photoUrls || [];
+            const newlyUploaded = allUrls[allUrls.length - 1];
+            if (newlyUploaded) {
+              const reordered = [newlyUploaded, ...allUrls.filter((u: string) => u !== newlyUploaded)];
+              const up = await firstValueFrom(this.api.updateBusiness(b._id!, { photoUrls: reordered }));
+              this.applyPhotoSync(up);
+              return;
+            }
+          }
+          this.applyPhotoSync(r.business);
         })
         .catch((e) => {
           const msg = e?.error?.message;
@@ -292,7 +507,11 @@ export class MiNegocioPage implements OnInit {
       this.uploading.set(false);
       this.uploadProgress.set(0);
       if (reasons.length === 0) {
-        this.savedMsg.set(`${okCount} foto${okCount !== 1 ? 's' : ''} subida${okCount !== 1 ? 's' : ''} correctamente.`);
+        this.savedMsg.set(
+          isMain
+            ? 'Foto principal actualizada correctamente.'
+            : `${okCount} foto${okCount !== 1 ? 's' : ''} subida${okCount !== 1 ? 's' : ''} correctamente.`
+        );
       } else if (okCount === 0) {
         this.error.set(reasons[0] || 'No se pudieron subir las fotos.');
       } else {
@@ -300,6 +519,7 @@ export class MiNegocioPage implements OnInit {
       }
     });
   }
+
 
   removePhoto(url: string) {
     const b = this.business();
@@ -329,6 +549,7 @@ export class MiNegocioPage implements OnInit {
       this.error.set('El nombre es obligatorio');
       return;
     }
+    if (!this.validateContacts()) return;
 
     const b = this.business();
     if (!b?._id) return;
@@ -353,7 +574,7 @@ export class MiNegocioPage implements OnInit {
       promoStart: f.promoStart.trim(),
       promoEnd: f.promoEnd.trim(),
       email: f.email.trim(),
-      website: f.website.trim(),
+      website: normalizeWebsiteUrl(f.website.trim()),
       instagram: f.instagram.trim(),
       facebook: f.facebook.trim(),
       servicios: textToList(f.serviciosText),
@@ -385,10 +606,112 @@ export class MiNegocioPage implements OnInit {
   }
 
   tabLabel(t: string): string {
-    return ({ datos: 'Datos', horarios: 'Horarios', fotos: 'Fotos', promo: 'Promoción', extras: 'Extras' } as Record<string, string>)[t] ?? t;
+    return (
+      {
+        datos: 'Datos',
+        horarios: 'Horarios',
+        fotos: 'Fotos',
+        promo: 'Promoción',
+        extras: 'Extras',
+      } as Record<string, string>
+    )[t] ?? t;
   }
+
 
   selectTab(t: string) {
     this.activeTab.set(t as Tab);
+  }
+
+  currentPriceOption(): PriceRangeOption {
+    return getPriceRangeOption(this.form().priceRange);
+  }
+
+  isOpenNowCalculated(): boolean {
+    return isOpenNow(textToHours(this.form().hoursText));
+  }
+
+  setScheduleMode(mode: ScheduleMode) {
+    this.scheduleMode.set(mode);
+    if (mode === 'weekdays-weekend') {
+      this.set('hoursText', weekdayWeekendToText(this.weekdaysConfig()));
+    } else if (mode === 'daily') {
+      this.set('hoursText', daysToText(this.daysConfig()));
+    }
+  }
+
+  updateWeekdays<K extends keyof WeekdayWeekendConfig>(key: K, val: WeekdayWeekendConfig[K]) {
+    this.weekdaysConfig.update((cfg) => {
+      const updated = { ...cfg, [key]: val };
+      if (this.scheduleMode() === 'weekdays-weekend') {
+        this.set('hoursText', weekdayWeekendToText(updated));
+      }
+      return updated;
+    });
+  }
+
+  updateDay(index: number, patch: Partial<DayRow>) {
+    this.daysConfig.update((rows) => {
+      const updated = rows.map((r, i) => (i === index ? { ...r, ...patch } : r));
+      if (this.scheduleMode() === 'daily') {
+        this.set('hoursText', daysToText(updated));
+      }
+      return updated;
+    });
+  }
+
+  copyMondayToWeekdays() {
+    const monday = this.daysConfig()[0];
+    if (!monday) return;
+    this.daysConfig.update((rows) => {
+      const updated = rows.map((r, i) => {
+        if (i >= 1 && i <= 4) {
+          return {
+            ...r,
+            isOpen: monday.isOpen,
+            isAppointment: monday.isAppointment,
+            start: monday.start,
+            end: monday.end,
+          };
+        }
+        return r;
+      });
+      if (this.scheduleMode() === 'daily') {
+        this.set('hoursText', daysToText(updated));
+      }
+      return updated;
+    });
+  }
+
+  copyMondayToAll() {
+    const monday = this.daysConfig()[0];
+    if (!monday) return;
+    this.daysConfig.update((rows) => {
+      const updated = rows.map((r) => ({
+        ...r,
+        isOpen: monday.isOpen,
+        isAppointment: monday.isAppointment,
+        start: monday.start,
+        end: monday.end,
+      }));
+      if (this.scheduleMode() === 'daily') {
+        this.set('hoursText', daysToText(updated));
+      }
+      return updated;
+    });
+  }
+
+  applyPreset(preset: SchedulePreset) {
+    this.set('hoursText', preset.text);
+    const p = parseScheduleText(preset.text);
+    this.weekdaysConfig.set(p.weekdaysConfig);
+    this.daysConfig.set(p.days);
+    this.scheduleMode.set(p.mode);
+  }
+
+  onCustomHoursChange(text: string) {
+    this.set('hoursText', text);
+    const p = parseScheduleText(text);
+    this.weekdaysConfig.set(p.weekdaysConfig);
+    this.daysConfig.set(p.days);
   }
 }

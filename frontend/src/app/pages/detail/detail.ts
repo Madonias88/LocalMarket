@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DecimalPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import { ApiService } from '../../services/api.service';
 import { GeolocationService } from '../../services/geolocation.service';
@@ -19,13 +20,14 @@ import { QrViewComponent } from '../../components/qr-view/qr-view';
 import { distanceKm, formatDistance } from '../../utils/location';
 import { openNowLabel } from '../../utils/open-hours';
 import { activePromo } from '../../utils/promo';
+import { formatPriceRange } from '../../utils/price-range';
 import type { Business, BusinessPromo } from '../../models/business';
 import type { Category } from '../../models/category';
 import type { Review } from '../../models/review';
 
 @Component({
   selector: 'lm-detail',
-  imports: [RouterLink, DecimalPipe, DatePipe, QrViewComponent],
+  imports: [RouterLink, DecimalPipe, DatePipe, QrViewComponent, FormsModule],
   templateUrl: './detail.html',
   styleUrl: './detail.css',
 })
@@ -47,6 +49,53 @@ export class DetailPage implements OnInit, AfterViewInit {
   readonly business = signal<Business | null>(null);
   readonly categories = signal<Category[]>([]);
   readonly selectedPhoto = signal(0);
+  readonly selectedAdditionalIndex = signal(0);
+  readonly previewModalOpen = signal(false);
+
+  mainPhoto(): string {
+    const p = this.photos();
+    return p.length > 0 ? p[0] : 'https://picsum.photos/seed/default/900/500';
+  }
+
+  additionalPhotos(): string[] {
+    const p = this.photos();
+    return p.length > 1 ? p.slice(1) : [];
+  }
+
+  selectedAdditionalPhotoUrl(): string {
+    const add = this.additionalPhotos();
+    const idx = this.selectedAdditionalIndex();
+    return add[idx] ?? add[0] ?? '';
+  }
+
+  selectAdditionalPhoto(idx: number) {
+    this.selectedAdditionalIndex.set(idx);
+  }
+
+  openPreview(photoIndex: number = 0) {
+    this.selectedPhoto.set(photoIndex);
+    this.previewModalOpen.set(true);
+  }
+
+  openAdditionalPreview() {
+    this.openPreview(this.selectedAdditionalIndex() + 1);
+  }
+
+  closePreview() {
+    this.previewModalOpen.set(false);
+  }
+
+  nextPhoto() {
+    const total = this.photos().length;
+    if (total <= 1) return;
+    this.selectedPhoto.update((i) => (i + 1) % total);
+  }
+
+  prevPhoto() {
+    const total = this.photos().length;
+    if (total <= 1) return;
+    this.selectedPhoto.update((i) => (i - 1 + total) % total);
+  }
 
   readonly reviews = signal<Review[]>([]);
   readonly reviewCount = signal(0);
@@ -54,6 +103,7 @@ export class DetailPage implements OnInit, AfterViewInit {
 
   readonly reviewName = signal('');
   readonly reviewRating = signal(5);
+  readonly hoverRating = signal(0);
   readonly reviewComment = signal('');
   readonly reviewError = signal('');
   readonly reviewSent = signal(false);
@@ -88,15 +138,20 @@ export class DetailPage implements OnInit, AfterViewInit {
   }
 
   private loadReviews() {
-    const id = this.business()?._id;
+    const id = this.business()?._id || this.route.snapshot.paramMap.get('id');
     if (!id) return;
-    this.api.reviews(id).subscribe((r) => {
-      this.reviews.set(r.reviews);
-      this.reviewCount.set(r.count);
-      this.reviewAverage.set(r.average);
-      if (this.business()) {
-        this.business.update((b) => (b ? { ...b, rating: r.average, reviewCount: r.count } : b));
-      }
+    this.api.reviews(id).subscribe({
+      next: (r) => {
+        this.reviews.set(r.reviews);
+        this.reviewCount.set(r.count);
+        this.reviewAverage.set(r.average);
+        if (this.business()) {
+          this.business.update((b) => (b ? { ...b, rating: r.average, reviewCount: r.count } : b));
+        }
+      },
+      error: (err) => {
+        console.error('Error cargando reseñas:', err);
+      },
     });
   }
 
@@ -106,7 +161,7 @@ export class DetailPage implements OnInit, AfterViewInit {
   }
 
   submitReview() {
-    const id = this.business()?._id;
+    const id = this.business()?._id || this.route.snapshot.paramMap.get('id');
     if (!id) return;
     const name = this.reviewName().trim();
     if (!name) {
@@ -131,9 +186,9 @@ export class DetailPage implements OnInit, AfterViewInit {
             this.reviewSent.set(false);
           }, 4500);
         },
-        error: () => {
+        error: (err) => {
           this.submitting.set(false);
-          this.reviewError.set('No se pudo enviar tu reseña. Inténtalo de nuevo.');
+          this.reviewError.set(err?.error?.message || 'No se pudo enviar tu reseña. Inténtalo de nuevo.');
         },
       });
   }
@@ -234,6 +289,10 @@ export class DetailPage implements OnInit, AfterViewInit {
 
   statusLabel(): string {
     return openNowLabel(this.business()?.hours);
+  }
+
+  priceLabel(val?: string): string {
+    return formatPriceRange(val);
   }
 
   stars(n: number): number[] {

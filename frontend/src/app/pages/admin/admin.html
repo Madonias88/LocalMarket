@@ -1,50 +1,7 @@
-@if (!auth.authed()) {
-  <main class="login">
-    <form class="card" (ngSubmit)="doLogin()">
-      <div class="login-head">
-        <span class="monogram">AD</span>
-        <h1>Administración</h1>
-        <p>Acceso restringido para el equipo de LocalMarket.</p>
-      </div>
-      <label class="field">
-        Usuario
-        <input
-          type="text"
-          autocomplete="username"
-          placeholder="usuario"
-          [value]="username()"
-          (input)="username.set($any($event.target).value)"
-        />
-      </label>
-      <label class="field">
-        Contraseña
-        <span class="pwd-wrap">
-          <input
-            [type]="showPassword() ? 'text' : 'password'"
-            autocomplete="current-password"
-            placeholder="••••••••"
-            [value]="password()"
-            (input)="password.set($any($event.target).value)"
-          />
-          <button
-            type="button"
-            class="pwd-toggle"
-            (click)="showPassword.set(!showPassword())"
-          >
-            {{ showPassword() ? 'Ocultar' : 'Ver' }}
-          </button>
-        </span>
-      </label>
-      @if (error()) {
-        <p class="err">{{ error() }}</p>
-      }
-      <button type="submit" class="submit">Entrar</button>
-    </form>
-  </main>
-} @else {
-  <main class="container">
+<main class="container">
   <div class="admin-bar">
     <h1>Panel de administración</h1>
+
     <nav>
       <a routerLink="/">Ver directorio</a>
     </nav>
@@ -83,9 +40,47 @@
     @if (showReviews()) {
       <section class="card reviews-panel">
         <div class="reviews-head">
-          <h2>Moderación de reseñas</h2>
+          <div class="reviews-title-wrap">
+            <h2>💬 Moderación de comentarios y reseñas</h2>
+            <p class="reviews-subtitle">
+              Revisa los comentarios que los usuarios dejan a los negocios. Puedes aprobarlos para publicarlos en la plataforma o rechazarlos.
+            </p>
+          </div>
+          <button type="button" class="reviews-close-btn" (click)="toggleReviews()" title="Cerrar panel de comentarios">
+            ✕
+          </button>
+        </div>
+
+        <div class="reviews-controls">
+          <!-- Filtro por negocio específico -->
+          <div class="biz-selector-wrap">
+            <label for="reviewBizSelect">Filtrar por negocio:</label>
+            <select
+              id="reviewBizSelect"
+              [value]="selectedReviewBusiness()"
+              (change)="setReviewBusiness($any($event.target).value)"
+            >
+              <option value="all">🏢 Todos los negocios ({{ businesses().length }})</option>
+              @for (b of businesses(); track b._id) {
+                <option [value]="b._id">{{ b.name }}</option>
+              }
+            </select>
+            @if (selectedReviewBusiness() !== 'all') {
+              <button
+                type="button"
+                class="btn-clear-biz"
+                (click)="setReviewBusiness('all')"
+                title="Quitar filtro de negocio y ver todos"
+              >
+                ✕ Ver todos
+              </button>
+            }
+          </div>
+
+          <!-- Pestañas de estado -->
           <div class="tabs">
             <button
+              type="button"
               class="link"
               [class.active]="reviewFilter() === 'pending'"
               (click)="setReviewFilter('pending')"
@@ -93,17 +88,41 @@
               Pendientes ({{ pendingReviews() }})
             </button>
             <button
+              type="button"
               class="link"
               [class.active]="reviewFilter() === 'approved'"
               (click)="setReviewFilter('approved')"
             >
               Publicadas
             </button>
+            <button
+              type="button"
+              class="link"
+              [class.active]="reviewFilter() === 'rejected'"
+              (click)="setReviewFilter('rejected')"
+            >
+              Rechazadas
+            </button>
+            <button
+              type="button"
+              class="link"
+              [class.active]="reviewFilter() === 'all'"
+              (click)="setReviewFilter('all')"
+            >
+              Todas
+            </button>
           </div>
         </div>
 
+        @if (selectedReviewBusiness() !== 'all') {
+          <div class="biz-active-indicator">
+            <span>Mostrando comentarios para: <strong>{{ selectedBusinessName() }}</strong></span>
+            <button type="button" class="link-clean" (click)="setReviewBusiness('all')">Restablecer a todos</button>
+          </div>
+        }
+
         @if (reviewLoading()) {
-          <p class="muted">Procesando...</p>
+          <p class="muted review-loading-indicator">⏳ Cargando comentarios...</p>
         }
         @if (reviewMsg()) {
           <p class="msg">{{ reviewMsg() }}</p>
@@ -112,33 +131,100 @@
         @if (reviews().length) {
           <div class="review-list">
             @for (r of reviews(); track r._id) {
-              <div class="review" [class.rejected]="!r.approved">
-                <div class="review-info">
-                  <div class="stars">
-                    @for (i of [1, 2, 3, 4, 5]; track i) {
-                      <span [class.on]="i <= r.rating">★</span>
+              <div
+                class="review"
+                [class.review-pending]="!r.approved && r.status !== 'rejected'"
+                [class.review-approved]="r.approved"
+                [class.review-rejected]="r.status === 'rejected'"
+              >
+                <div class="review-header-row">
+                  <div class="review-user-block">
+                    <span class="user-initial">{{ r.userName.charAt(0) || 'U' }}</span>
+                    <div class="user-meta">
+                      <strong>{{ r.userName }}</strong>
+                      <span class="stars" [title]="r.rating + ' estrellas'">
+                        @for (i of [1, 2, 3, 4, 5]; track i) {
+                          <span [class.on]="i <= r.rating">★</span>
+                        }
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="review-target-block">
+                    <button
+                      type="button"
+                      class="btn-target-biz"
+                      (click)="setReviewBusiness(r.businessId)"
+                      title="Filtrar comentarios solo de este negocio"
+                    >
+                      🏪 {{ businessName(r.businessId) }}
+                    </button>
+                    <span class="date">{{ r.createdAt | date: 'd MMM yyyy, HH:mm' }}</span>
+                  </div>
+
+                  <div class="review-status-pill">
+                    @if (r.approved) {
+                      <span class="badge-status approved">✔ Publicado</span>
+                    } @else if (r.status === 'rejected') {
+                      <span class="badge-status rejected">✕ Rechazado</span>
+                    } @else {
+                      <span class="badge-status pending">⏳ Pendiente</span>
                     }
                   </div>
-                  <strong>{{ r.userName }}</strong>
-                  <span class="muted">sobre {{ businessName(r.businessId) }}</span>
-                  <span class="muted date">{{ r.createdAt | date: 'd MMM yyyy, HH:mm' }}</span>
                 </div>
-                @if (r.comment) {
-                  <p>{{ r.comment }}</p>
-                }
+
+                <div class="review-comment-body">
+                  @if (r.comment) {
+                    <p class="comment-text">"{{ r.comment }}"</p>
+                  } @else {
+                    <p class="comment-empty">(El cliente no dejó texto explicativo, únicamente calificación de {{ r.rating }} estrellas)</p>
+                  }
+                </div>
+
                 <div class="review-actions">
                   @if (!r.approved) {
-                    <button class="outline small" (click)="approveReview(r)">✔ Aprobar y publicar</button>
-                    <button class="danger small" (click)="deleteReview(r)">Eliminar</button>
-                  } @else {
-                    <button class="danger small" (click)="deleteReview(r)">Eliminar</button>
+                    <button
+                      type="button"
+                      class="btn-action-approve"
+                      [disabled]="reviewLoading()"
+                      (click)="approveReview(r)"
+                    >
+                      ✔ Aprobar y publicar
+                    </button>
                   }
+                  @if (r.status !== 'rejected') {
+                    <button
+                      type="button"
+                      class="btn-action-reject"
+                      [disabled]="reviewLoading()"
+                      (click)="rejectReview(r)"
+                    >
+                      ✕ Rechazar comentario
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="btn-action-delete"
+                    [disabled]="reviewLoading()"
+                    (click)="deleteReview(r)"
+                  >
+                    🗑️ Eliminar
+                  </button>
                 </div>
               </div>
             }
           </div>
-        } @else {
-          <p class="muted">No hay reseñas en esta lista.</p>
+        } @else if (!reviewLoading()) {
+          <div class="reviews-empty">
+            <span class="empty-icon">💬</span>
+            <p>
+              @if (selectedReviewBusiness() !== 'all') {
+                No hay comentarios para <strong>{{ selectedBusinessName() }}</strong> con el filtro seleccionado.
+              } @else {
+                No se encontraron comentarios en la sección seleccionada.
+              }
+            </p>
+          </div>
         }
       </section>
     }
@@ -162,6 +248,12 @@
         </select>
       </div>
       <button (click)="newBusiness()">+ Nuevo negocio</button>
+      <button type="button" class="btn-toggle-reviews" (click)="toggleReviews()">
+        💬 {{ showReviews() ? 'Ocultar comentarios' : 'Moderar comentarios' }}
+        @if (pendingReviews() > 0) {
+          <span class="bubble-pending">{{ pendingReviews() }}</span>
+        }
+      </button>
       <button (click)="togglePending()">
         {{ showPending() ? 'Ocultar solicitudes' : 'Solicitudes (' + pendingList().length + ')' }}
       </button>
@@ -212,230 +304,549 @@
     }
 
     @if (editing(); as f) {
-      <form class="card form" (ngSubmit)="save()">
-        <h2>{{ f._id ? 'Editar' : 'Nuevo' }} negocio</h2>
-        <input
-          placeholder="Nombre *"
-          required
-          [value]="f.name"
-          (input)="editing()!.name = $any($event.target).value"
-        />
-        <select
-          required
-          [value]="f.categoryId"
-          (change)="editing()!.categoryId = $any($event.target).value"
-        >
-          <option value="" disabled>Selecciona categoría *</option>
-          @for (c of categories(); track c._id) {
-            <option [value]="c._id">{{ c.name }}</option>
-          }
-        </select>
-        <textarea
-          placeholder="Descripción"
-          rows="2"
-          [value]="f.description"
-          (input)="editing()!.description = $any($event.target).value"
-        ></textarea>
-        <input
-          placeholder="Dirección"
-          [value]="f.address"
-          (input)="editing()!.address = $any($event.target).value"
-        />
-        <input
-          placeholder="Zona / municipio (ej. San Raymundo)"
-          [value]="f.zone"
-          (input)="editing()!.zone = $any($event.target).value"
-        />
-        <div class="two">
-          <input
-            placeholder="Teléfono"
-            [value]="f.phone"
-            (input)="editing()!.phone = $any($event.target).value"
-          />
-          <input
-            placeholder="WhatsApp"
-            [value]="f.whatsapp"
-            (input)="editing()!.whatsapp = $any($event.target).value"
-          />
-        </div>
-        <div class="two">
-          <input
-            placeholder="Latitud"
-            type="number"
-            step="any"
-            [value]="f.latitude"
-            (input)="editing()!.latitude = parseNumber($any($event.target).value)"
-          />
-          <input
-            placeholder="Longitud"
-            type="number"
-            step="any"
-            [value]="f.longitude"
-            (input)="editing()!.longitude = parseNumber($any($event.target).value)"
-          />
-        </div>
-        <div class="two">
-          <input
-            placeholder="Rango de precio ($, $$, $$$)"
-            [value]="f.priceRange"
-            (input)="editing()!.priceRange = $any($event.target).value"
-          />
-          <input
-            placeholder="Rating (0-5)"
-            type="number"
-            min="0"
-            max="5"
-            step="0.1"
-            [value]="f.rating"
-            (input)="editing()!.rating = parseNumber($any($event.target).value)"
-          />
-        </div>
-        <textarea
-          placeholder="URLs de fotos (una por línea)"
-          rows="2"
-          [value]="f.photoUrls"
-          (input)="editing()!.photoUrls = $any($event.target).value"
-        ></textarea>
-        <label class="heading" for="promo-field">Promoción vigente</label>
-        <input
-          id="promo-field"
-          placeholder="Texto de la oferta (ej. 2x1 en sábados)"
-          [value]="f.promoText"
-          (input)="editing()!.promoText = $any($event.target).value"
-        />
-        <div class="two">
-          <input
-            type="date"
-            placeholder="Inicio"
-            [value]="f.promoStart"
-            (change)="editing()!.promoStart = $any($event.target).value"
-          />
-          <input
-            type="date"
-            placeholder="Fin (vacío = sin fin)"
-            [value]="f.promoEnd"
-            (change)="editing()!.promoEnd = $any($event.target).value"
-          />
-        </div>
-        <label class="heading">Contacto y redes</label>
-        <div class="two">
-          <input
-            placeholder="Correo electrónico"
-            type="email"
-            [value]="f.email"
-            (input)="editing()!.email = $any($event.target).value"
-          />
-          <input
-            placeholder="Sitio web"
-            [value]="f.website"
-            (input)="editing()!.website = $any($event.target).value"
-          />
-        </div>
-        <div class="two">
-          <input
-            placeholder="Instagram"
-            [value]="f.instagram"
-            (input)="editing()!.instagram = $any($event.target).value"
-          />
-          <input
-            placeholder="Facebook"
-            [value]="f.facebook"
-            (input)="editing()!.facebook = $any($event.target).value"
-          />
-        </div>
-        <label class="heading">Servicios y etiquetas</label>
-        <div class="two">
-          <textarea
-            placeholder="Servicios (uno por línea)"
-            rows="3"
-            [value]="f.serviciosText"
-            (input)="editing()!.serviciosText = $any($event.target).value"
-          ></textarea>
-          <textarea
-            placeholder="Etiquetas (una por línea)"
-            rows="3"
-            [value]="f.tagsText"
-            (input)="editing()!.tagsText = $any($event.target).value"
-          ></textarea>
-        </div>
-        <label class="heading">Envío a domicilio</label>
-        <label class="check">
-          <input type="checkbox" [checked]="f.delivery" (change)="editing()!.delivery = $any($event.target).checked" />
-          Ofrece envío
-        </label>
-        @if (f.delivery) {
-          <div class="two">
-            <textarea
-              placeholder="Zonas de entrega (una por línea)"
-              rows="3"
-              [value]="f.deliveryZonesText"
-              (input)="editing()!.deliveryZonesText = $any($event.target).value"
-            ></textarea>
-            <div class="two">
-              <input
-                placeholder="Costo envío (Q)"
-                type="number"
-                min="0"
-                step="0.5"
-                [value]="f.deliveryFee"
-                (input)="editing()!.deliveryFee = parseNumber($any($event.target).value)"
-              />
-              <input
-                placeholder="Pedido mínimo (Q)"
-                type="number"
-                min="0"
-                step="0.5"
-                [value]="f.minOrder"
-                (input)="editing()!.minOrder = parseNumber($any($event.target).value)"
-              />
+      <div class="modal-overlay" (click)="onBackdropClick($event)" role="dialog" aria-modal="true" [attr.aria-label]="f._id ? 'Editar negocio' : 'Nuevo negocio'">
+        <div class="modal-dialog">
+          <div class="modal-header">
+            <div class="modal-title-wrap">
+              <span class="modal-badge">{{ f._id ? '✏️ Modo Edición' : '✨ Nuevo Registro' }}</span>
+              <h2>{{ f._id ? 'Editar: ' + (f.name || 'Negocio') : 'Nuevo negocio' }}</h2>
+              @if (f._id) {
+                <span class="modal-id">ID: <code>{{ f._id }}</code></span>
+              }
             </div>
+            <button
+              type="button"
+              class="modal-close"
+              (click)="cancelEdit()"
+              title="Cerrar ventana (Esc)"
+              aria-label="Cerrar modal"
+            >
+              ✕
+            </button>
           </div>
-        }
-        <label class="heading">Métodos de pago y ofertas</label>
-        <textarea
-          placeholder="Métodos de pago (uno por línea): efectivo / tarjeta / transferencia..."
-          rows="2"
-          [value]="f.paymentMethodsText"
-          (input)="editing()!.paymentMethodsText = $any($event.target).value"
-        ></textarea>
-        <textarea
-          placeholder="Ofertas: una por línea «Título | descuento | desde | hasta»"
-          rows="2"
-          [value]="f.promosText"
-          (input)="editing()!.promosText = $any($event.target).value"
-        ></textarea>
-        <label class="heading">Popularidad</label>
-        <div class="two">
-          <input
-            placeholder="Vistas (viewsCount)"
-            type="number"
-            min="0"
-            [value]="f.viewsCount"
-            (input)="editing()!.viewsCount = parseNumber($any($event.target).value)"
-          />
-          <input
-            placeholder="Reseñas (reviewCount)"
-            type="number"
-            min="0"
-            [value]="f.reviewCount"
-            (input)="editing()!.reviewCount = parseNumber($any($event.target).value)"
-          />
+
+          <form class="modal-form" (ngSubmit)="save()">
+            <div class="modal-body">
+              @if (error()) {
+                <div class="modal-alert-error">
+                  <span class="alert-icon">⚠</span>
+                  <span class="alert-text">{{ error() }}</span>
+                </div>
+              }
+
+              <!-- SECCIÓN 1: Identificación y Categoría -->
+              <div class="modal-group">
+                <div class="group-title">
+                  <span class="group-icon">🏪</span>
+                  <span>Datos del negocio</span>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-field full">
+                    <label>Nombre del negocio <span class="req">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Panadería San Antonio"
+                      required
+                      [value]="f.name"
+                      (input)="editing()!.name = $any($event.target).value"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Categoría <span class="req">*</span></label>
+                    <select
+                      required
+                      [value]="f.categoryId"
+                      (change)="editing()!.categoryId = $any($event.target).value"
+                    >
+                      <option value="" disabled>Selecciona categoría *</option>
+                      @for (c of categories(); track c._id) {
+                        <option [value]="c._id">{{ c.name }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="form-field">
+                    <label>Rango de precios</label>
+                    <select
+                      [value]="f.priceRange"
+                      (change)="editing()!.priceRange = $any($event.target).value"
+                    >
+                      <option value="$">$ — Económico (accesible, &lt; Q50)</option>
+                      <option value="$$">$$ — Moderado (estándar, Q50 - Q150)</option>
+                      <option value="$$$">$$$ — Premium (alta gama, &gt; Q150)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-field full">
+                    <label>Descripción</label>
+                    <textarea
+                      placeholder="Breve reseña sobre el negocio, sus especialidades y qué encontrarán los clientes..."
+                      rows="2"
+                      [value]="f.description"
+                      (input)="editing()!.description = $any($event.target).value"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECCIÓN 2: Ubicación geográfica -->
+              <div class="modal-group">
+                <div class="group-title">
+                  <span class="group-icon">📍</span>
+                  <span>Ubicación y GPS</span>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label>Dirección física</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. 3ra Calle 4-15"
+                      [value]="f.address"
+                      (input)="editing()!.address = $any($event.target).value"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Zona / Municipio</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. San Raymundo, Zona 1"
+                      [value]="f.zone"
+                      (input)="editing()!.zone = $any($event.target).value"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Latitud GPS</label>
+                    <input
+                      placeholder="14.6349"
+                      type="number"
+                      step="any"
+                      [value]="f.latitude"
+                      (input)="editing()!.latitude = parseNumber($any($event.target).value)"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Longitud GPS</label>
+                    <input
+                      placeholder="-90.5069"
+                      type="number"
+                      step="any"
+                      [value]="f.longitude"
+                      (input)="editing()!.longitude = parseNumber($any($event.target).value)"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECCIÓN 3: Contacto directo y Redes -->
+              <div class="modal-group">
+                <div class="group-title">
+                  <span class="group-icon">📞</span>
+                  <span>Contacto y Canales digitales</span>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label>Teléfono de atención</label>
+                    <input
+                      placeholder="+502 5555 0000"
+                      type="tel"
+                      inputmode="tel"
+                      [class.input-invalid]="phoneError()"
+                      [value]="f.phone"
+                      (input)="onPhoneInput($any($event.target).value)"
+                    />
+                    @if (phoneError()) {
+                      <span class="field-error-text">⚠ {{ phoneError() }}</span>
+                    }
+                  </div>
+
+                  <div class="form-field">
+                    <label>WhatsApp</label>
+                    <input
+                      placeholder="502 5555 0000"
+                      type="tel"
+                      inputmode="tel"
+                      [class.input-invalid]="whatsappError()"
+                      [value]="f.whatsapp"
+                      (input)="onWhatsAppInput($any($event.target).value)"
+                    />
+                    @if (whatsappError()) {
+                      <span class="field-error-text">⚠ {{ whatsappError() }}</span>
+                    }
+                  </div>
+
+                  <div class="form-field">
+                    <label>Correo electrónico</label>
+                    <input
+                      placeholder="contacto@minegocio.com"
+                      type="email"
+                      inputmode="email"
+                      [class.input-invalid]="emailError()"
+                      [value]="f.email"
+                      (input)="onEmailInput($any($event.target).value)"
+                    />
+                    @if (emailError()) {
+                      <span class="field-error-text">⚠ {{ emailError() }}</span>
+                    }
+                  </div>
+
+                  <div class="form-field">
+                    <label>Sitio web</label>
+                    <input
+                      placeholder="https://minegocio.com"
+                      type="url"
+                      inputmode="url"
+                      [class.input-invalid]="websiteError()"
+                      [value]="f.website"
+                      (input)="onWebsiteInput($any($event.target).value)"
+                    />
+                    @if (websiteError()) {
+                      <span class="field-error-text">⚠ {{ websiteError() }}</span>
+                    }
+                  </div>
+
+                  <div class="form-field">
+                    <label>Instagram</label>
+                    <input
+                      placeholder="@minegocio"
+                      type="text"
+                      [value]="f.instagram"
+                      (input)="editing()!.instagram = $any($event.target).value"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Facebook</label>
+                    <input
+                      placeholder="MiNegocioOficial"
+                      type="text"
+                      [value]="f.facebook"
+                      (input)="editing()!.facebook = $any($event.target).value"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECCIÓN 4: Galería de Fotos y Calificación -->
+              <div class="modal-group">
+                <div class="group-title">
+                  <span class="group-icon">🖼️</span>
+                  <span>Fotos y Valoración</span>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-field full">
+                    <label>Rating asignado (0.0 a 5.0)</label>
+                    <input
+                      placeholder="4.5"
+                      type="number"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      [value]="f.rating"
+                      (input)="editing()!.rating = parseNumber($any($event.target).value)"
+                    />
+                  </div>
+
+                  <div class="form-field full">
+                    <label>URLs de fotos (una por línea)</label>
+                    <textarea
+                      placeholder="https://images.unsplash.com/photo-1...&#10;https://images.unsplash.com/photo-2..."
+                      rows="3"
+                      [value]="f.photoUrls"
+                      (input)="editing()!.photoUrls = $any($event.target).value"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECCIÓN 5: Promoción y Ofertas -->
+              <div class="modal-group">
+                <div class="group-title">
+                  <span class="group-icon">🎁</span>
+                  <span>Promoción y Ofertas</span>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-field full">
+                    <label>Texto de oferta destacada</label>
+                    <input
+                      placeholder="Ej. 2x1 en almuerzos los jueves"
+                      [value]="f.promoText"
+                      (input)="editing()!.promoText = $any($event.target).value"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Fecha de inicio</label>
+                    <input
+                      type="date"
+                      [value]="f.promoStart"
+                      (change)="editing()!.promoStart = $any($event.target).value"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Fecha de fin (vacío = permanente)</label>
+                    <input
+                      type="date"
+                      [value]="f.promoEnd"
+                      (change)="editing()!.promoEnd = $any($event.target).value"
+                    />
+                  </div>
+
+                  <div class="form-field full">
+                    <label>Ofertas estructuradas (Título | Descuento | Desde | Hasta)</label>
+                    <textarea
+                      placeholder="Café y pan dulce | 10% | 2026-10-01 | 2026-12-31"
+                      rows="2"
+                      [value]="f.promosText"
+                      (input)="editing()!.promosText = $any($event.target).value"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECCIÓN 6: Servicios, Etiquetas y Envíos -->
+              <div class="modal-group">
+                <div class="group-title">
+                  <span class="group-icon">🏷️</span>
+                  <span>Servicios, Etiquetas y Envíos</span>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label>Servicios (uno por línea)</label>
+                    <textarea
+                      placeholder="WiFi gratis&#10;Parqueo&#10;Mesas al aire libre"
+                      rows="3"
+                      [value]="f.serviciosText"
+                      (input)="editing()!.serviciosText = $any($event.target).value"
+                    ></textarea>
+                  </div>
+
+                  <div class="form-field">
+                    <label>Etiquetas (una por línea)</label>
+                    <textarea
+                      placeholder="cafetería&#10;desayunos&#10;artesanal"
+                      rows="3"
+                      [value]="f.tagsText"
+                      (input)="editing()!.tagsText = $any($event.target).value"
+                    ></textarea>
+                  </div>
+
+                  <div class="form-field full modal-checkbox-card">
+                    <label class="check-container">
+                      <input
+                        type="checkbox"
+                        [checked]="f.delivery"
+                        (change)="editing()!.delivery = $any($event.target).checked"
+                      />
+                      <span class="check-text">
+                        <strong>Ofrece servicio a domicilio (Delivery)</strong>
+                        <small>Habilita tarifas y zonas de cobertura de reparto</small>
+                      </span>
+                    </label>
+
+                    @if (f.delivery) {
+                      <div class="delivery-subfields">
+                        <div class="form-field full">
+                          <label>Zonas de entrega (una por línea)</label>
+                          <textarea
+                            placeholder="San Raymundo Centro&#10;Aldea La Ciénaga&#10;Zona 1"
+                            rows="2"
+                            [value]="f.deliveryZonesText"
+                            (input)="editing()!.deliveryZonesText = $any($event.target).value"
+                          ></textarea>
+                        </div>
+                        <div class="form-grid subgrid">
+                          <div class="form-field">
+                            <label>Costo de envío (Q)</label>
+                            <input
+                              placeholder="15.00"
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              [value]="f.deliveryFee"
+                              (input)="editing()!.deliveryFee = parseNumber($any($event.target).value)"
+                            />
+                          </div>
+                          <div class="form-field">
+                            <label>Pedido mínimo (Q)</label>
+                            <input
+                              placeholder="50.00"
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              [value]="f.minOrder"
+                              (input)="editing()!.minOrder = parseNumber($any($event.target).value)"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="form-field full payment-admin-box">
+                    <label>Métodos de pago aceptados</label>
+                    <div class="payment-dropdown-wrap">
+                      <button
+                        type="button"
+                        class="payment-dropdown-trigger"
+                        (click)="adminPaymentDropdownOpen.set(!adminPaymentDropdownOpen())"
+                      >
+                        <span class="trigger-icon">💳</span>
+                        <span class="trigger-text">
+                          @if (adminSelectedPayments().length === 0) {
+                            Seleccionar métodos de pago aceptados...
+                          } @else {
+                            {{ adminSelectedPayments().length }} método{{ adminSelectedPayments().length !== 1 ? 's' : '' }} seleccionado{{ adminSelectedPayments().length !== 1 ? 's' : '' }}
+                          }
+                        </span>
+                        <span class="trigger-arrow">{{ adminPaymentDropdownOpen() ? '▲' : '▼' }}</span>
+                      </button>
+
+                      @if (adminPaymentDropdownOpen()) {
+                        <div class="payment-dropdown-menu">
+                          <div class="dropdown-tip">Selecciona los métodos disponibles:</div>
+                          <div class="payment-options-list">
+                            @for (opt of standardPaymentOptions; track opt.id) {
+                              <div
+                                class="payment-option-item"
+                                [class.selected]="isAdminPaymentSelected(opt.label)"
+                                (click)="toggleAdminPayment(opt.label)"
+                              >
+                                <input
+                                  type="checkbox"
+                                  [checked]="isAdminPaymentSelected(opt.label)"
+                                  (click)="$event.stopPropagation(); toggleAdminPayment(opt.label)"
+                                />
+                                <span class="option-icon">{{ opt.icon }}</span>
+                                <div class="option-info">
+                                  <span class="option-label">{{ opt.label }}</span>
+                                  <span class="option-desc">{{ opt.desc }}</span>
+                                </div>
+                                @if (isAdminPaymentSelected(opt.label)) {
+                                  <span class="option-check">✓</span>
+                                }
+                              </div>
+                            }
+                          </div>
+                          <div class="custom-payment-row" (click)="$event.stopPropagation()">
+                            <input
+                              type="text"
+                              placeholder="Otro método personalizado..."
+                              [value]="adminCustomPaymentInput()"
+                              (input)="adminCustomPaymentInput.set($any($event.target).value)"
+                              (keydown.enter)="$event.preventDefault(); addAdminCustomPayment()"
+                            />
+                            <button
+                              type="button"
+                              class="btn-add-custom"
+                              (click)="addAdminCustomPayment()"
+                              [disabled]="!adminCustomPaymentInput().trim()"
+                            >
+                              + Agregar
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Chips de métodos seleccionados -->
+                    <div class="payment-chips-list" style="margin-top: 0.6rem;">
+                      @for (m of adminSelectedPayments(); track m) {
+                        <span class="payment-chip">
+                          <span class="chip-icon">{{ getAdminPaymentIcon(m) }}</span>
+                          <span class="chip-name">{{ m }}</span>
+                          <button
+                            type="button"
+                            class="chip-remove"
+                            (click)="removeAdminPayment(m)"
+                            title="Quitar"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      }
+                      @if (adminSelectedPayments().length === 0) {
+                        <span class="no-payments-hint">Sin métodos de pago seleccionados aún. Despliega la lista para agregar.</span>
+                      }
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- SECCIÓN 7: Visibilidad, Insignias y Métricas -->
+              <div class="modal-group">
+                <div class="group-title">
+                  <span class="group-icon">📊</span>
+                  <span>Estado y Métricas de Popularidad</span>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label>Vistas registradas (viewsCount)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      [value]="f.viewsCount"
+                      (input)="editing()!.viewsCount = parseNumber($any($event.target).value)"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Cantidad de reseñas (reviewCount)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      [value]="f.reviewCount"
+                      (input)="editing()!.reviewCount = parseNumber($any($event.target).value)"
+                    />
+                  </div>
+
+                  <div class="form-field full badge-switches">
+                    <label class="badge-toggle">
+                      <input
+                        type="checkbox"
+                        [checked]="f.verified"
+                        (change)="editing()!.verified = $any($event.target).checked"
+                      />
+                      <span class="badge-pill">🛡️ Negocio verificado</span>
+                    </label>
+
+                    <label class="badge-toggle">
+                      <input
+                        type="checkbox"
+                        [checked]="f.featured"
+                        (change)="editing()!.featured = $any($event.target).checked"
+                      />
+                      <span class="badge-pill">⭐ Negocio destacado</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- FOOTER FIJO DE ACCIONES -->
+            <div class="modal-footer">
+              <button type="button" class="btn-cancel" (click)="cancelEdit()">
+                Cancelar
+              </button>
+              <button type="submit" class="btn-save" [disabled]="saving()">
+                {{ saving() ? 'Guardando cambios...' : (f._id ? 'Guardar cambios' : 'Crear negocio') }}
+              </button>
+            </div>
+          </form>
         </div>
-        <label class="check">
-          <input type="checkbox" [checked]="f.verified" (change)="editing()!.verified = $any($event.target).checked" />
-          Verificado
-        </label>
-        <label class="check">
-          <input type="checkbox" [checked]="f.featured" (change)="editing()!.featured = $any($event.target).checked" />
-          Destacado
-        </label>
-        <div class="actions">
-          <button type="submit" [disabled]="saving()">
-            {{ saving() ? 'Guardando...' : 'Guardar' }}
-          </button>
-          <button type="button" class="outline" (click)="cancelEdit()">Cancelar</button>
-        </div>
-      </form>
+      </div>
     }
 
     <table>
@@ -464,6 +875,14 @@
             <td>{{ b.zone || '—' }}</td>
             <td>{{ b.rating }}</td>
             <td class="row-actions">
+              <button
+                type="button"
+                class="outline small btn-comments-row"
+                (click)="openBusinessReviews(b)"
+                title="Ver y moderar comentarios de {{ b.name }}"
+              >
+                💬 Comentarios
+              </button>
               <button class="outline small" (click)="editBusiness(b)">Editar</button>
               <button class="outline small" (click)="toggleFeatured(b)">
                 {{ b.featured ? 'Quitar★' : 'Destacar' }}
@@ -478,5 +897,4 @@
         }
       </tbody>
     </table>
-  </main>
-}
+  </main>
